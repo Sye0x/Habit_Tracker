@@ -152,6 +152,7 @@ function HomeScreen({ navigation }: any) {
             flatListRef.current?.scrollToIndex({ index: currentDay, animated: true });
         }, 100);
     };
+    const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -171,6 +172,9 @@ function HomeScreen({ navigation }: any) {
         getDays();
         loadCustomCards();
     }, []);
+    useEffect(() => {
+        setSelectedDayIndex(null);
+    }, [week]);
 
     // ---------------------------
     // Render
@@ -191,13 +195,36 @@ function HomeScreen({ navigation }: any) {
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     keyExtractor={(_, index) => index.toString()}
-                    renderItem={({ item }) => (
-                        <View style={[styles.dayBox, getStatusColor(item.status)]}>
-                            <Text style={[{ fontSize: 18, fontWeight: 'bold' }, getStatusText(item.status)]}>{item.date}</Text>
-                            <Text style={[{ fontSize: 18, fontWeight: 'bold' }, getStatusText(item.status)]}>{weekDay[item.day]}</Text>
-                        </View>
-                    )}
+                    renderItem={({ item, index }) => {
+                        const isSelected = selectedDayIndex === index;
+                        return (
+                            <Pressable
+                                style={[
+                                    styles.dayBox,
+                                    getStatusColor(item.status),
+                                    isSelected && { backgroundColor: "#ff924e" } // selected highlight
+                                ]}
+                                onPress={() => setSelectedDayIndex(index)}
+                            >
+                                <Text style={[
+                                    { fontSize: 18, fontWeight: 'bold' },
+                                    getStatusText(item.status),
+                                    isSelected && { color: "#fff" }
+                                ]}>
+                                    {item.date}
+                                </Text>
+                                <Text style={[
+                                    { fontSize: 18, fontWeight: 'bold' },
+                                    getStatusText(item.status),
+                                    isSelected && { color: "#fff" }
+                                ]}>
+                                    {weekDay[item.day]}
+                                </Text>
+                            </Pressable>
+                        );
+                    }}
                 />
+
             </View>
 
             {/* Add Card Button */}
