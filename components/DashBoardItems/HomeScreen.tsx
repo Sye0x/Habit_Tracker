@@ -10,6 +10,7 @@ import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 type CardDetail = {
     title: string;
     description: string;
+    habitType: string;
     duration: string;
 };
 
@@ -31,6 +32,9 @@ function HomeScreen({ navigation }: any) {
     const [newCardTitle, setNewCardTitle] = useState("");
     const [newCardDuration, setNewCardDuration] = useState("");
     const [newCardDescription, setNewCardDescription] = useState("");
+    const [newCardHabitType, setNewCardHabitType] = useState("Cardio");
+    const [showHabitTypeModal, setShowHabitTypeModal] = useState(false);
+    const habitTypes = ["Cardio", "Strength", "Meditation", "Study"];
     const [week, setWeek] = useState<Day[]>([]);
 
     // ---------------------------
@@ -91,11 +95,11 @@ function HomeScreen({ navigation }: any) {
             return;
         }
 
-
         const newCard: CardDetail = {
             title: newCardTitle,
             description: newCardDescription,
             duration: newCardDuration,
+            habitType: newCardHabitType // ✅ Save selected habit type
         };
 
         const updatedCards = [...customCards, newCard];
@@ -105,8 +109,10 @@ function HomeScreen({ navigation }: any) {
         setNewCardTitle("");
         setNewCardDescription("");
         setNewCardDuration("");
+        setNewCardHabitType("Cardio"); // reset
         setShowAddCardModal(false);
     };
+
 
     const handleDeleteCard = async (indexToDelete: number) => {
         const updatedCards = [...customCards];
@@ -173,12 +179,12 @@ function HomeScreen({ navigation }: any) {
         <View style={styles.container}>
             {/* Header Greeting */}
             <Text style={styles.greeting}>Good Morning {name}</Text>
-            <Text style={{ fontSize: 26, marginBottom: 10, marginLeft: 10 }}>
+            <Text style={{ fontSize: 22, marginBottom: 10, marginLeft: 10 }}>
                 {currentDate}, {Months[currentMonth]}
             </Text>
 
             {/* Day Strip */}
-            <View style={{ height: 100, marginBottom: 10 }}>
+            <View style={{ height: 70, marginBottom: 10 }}>
                 <FlatList
                     data={week}
                     ref={flatListRef}
@@ -236,9 +242,12 @@ function HomeScreen({ navigation }: any) {
                                         <FontAwesome name="trash" size={20} color="#fff" />
                                     </Pressable>
                                 </View>
-                                <View style={{ height: 1, backgroundColor: '#00000022', marginVertical: 10 }} />
+                                <View style={{ height: 1, backgroundColor: '#00000022', marginVertical: 4 }} />
                                 <Text style={styles.cardSubtitle}>{item.description || "No description provided."}</Text>
-                                <Text style={{ fontSize: 14, color: "#222", marginTop: 10 }}>Duration: {item.duration} min</Text>
+                                <Text style={{ fontSize: 14, color: "#222", marginTop: 4 }}>Duration: {item.duration} min</Text>
+                                <Text style={{ fontSize: 14, color: "#222", marginTop: 4 }}>
+                                    Habit Type: {item.habitType}
+                                </Text>
                                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 20 }}>
                                     <Text style={{ fontSize: 12, color: '#555' }}>Tap to view</Text>
                                 </View>
@@ -263,7 +272,8 @@ function HomeScreen({ navigation }: any) {
                             <Text style={styles.startTimerButton} onPress={() => [setSelectedCard(null), navigation.navigate("TimerScreen", {
                                 Title: selectedCard.title,
                                 Description: selectedCard.description,
-                                Duration: selectedCard.duration
+                                Duration: selectedCard.duration,
+                                HabitTypes: selectedCard.habitType
                             })]}>Start</Text>
                         </View>
                     </View>
@@ -301,9 +311,55 @@ function HomeScreen({ navigation }: any) {
                             value={newCardDescription}
                             onChangeText={setNewCardDescription}
                         />
+                        <View style={{
+                            flexDirection: "row",
+                            justifyContent: "flex-start", alignItems: "center",
+                            width: "90%", gap: 10, marginBottom: 20
+                        }} >
+                            <Text>Habit Type:</Text>
+                            <Pressable
+                                onPress={() => setShowHabitTypeModal(true)} // ✅ open modal
+                                style={{
+                                    width: 100, height: 35,
+                                    borderWidth: 1, borderRadius: 5,
+                                    justifyContent: "center", alignItems: "center",
+                                }}
+                            >
+                                <Text>{newCardHabitType}</Text>
+                            </Pressable>
+                        </View>
+
                         <Pressable onPress={handleAddCard} style={[styles.modalAdd, { marginTop: 10 }]}>
                             <Text style={{ color: "#fff" }}>Add Card</Text>
                         </Pressable>
+                        {showHabitTypeModal && (
+                            <View style={styles.modalWrapper}>
+                                <View style={styles.modalOverlay} onTouchEnd={() => setShowHabitTypeModal(false)} />
+                                <View style={[styles.modalContent, { backgroundColor: "#fff" }]}>
+                                    <Text style={styles.modalTitle}>Select Habit Type</Text>
+                                    {habitTypes.map((type, index) => (
+                                        <Pressable
+                                            key={index}
+                                            onPress={() => {
+                                                setNewCardHabitType(type);
+                                                setShowHabitTypeModal(false); // close modal
+                                            }}
+                                            style={{
+                                                padding: 10,
+                                                marginVertical: 5,
+                                                borderWidth: 1,
+                                                borderRadius: 8,
+                                                width: "100%",
+                                                alignItems: "center",
+                                            }}
+                                        >
+                                            <Text>{type}</Text>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
                     </View>
                 </View>
             )}
@@ -321,8 +377,8 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
     },
     dayBox: {
-        width: 80,
-        height: 95,
+        width: 60,
+        height: 65,
         borderRadius: 25,
         justifyContent: "center",
         alignItems: "center",
@@ -334,10 +390,11 @@ const styles = StyleSheet.create({
     // Typography
     // ---------------------------
     greeting: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: "bold",
         color: "#000",
         marginBottom: 10,
+        marginLeft: 10
     },
     cardTitle: {
         fontSize: 20,
@@ -472,12 +529,13 @@ const styles = StyleSheet.create({
     // ---------------------------
     addButton: {
         backgroundColor: "#7883f9ff",
-        width: 50,
-        height: 50,
+        width: 40,
+        height: 40,
         borderRadius: 25,
         alignItems: "center",
         justifyContent: "center",
         alignSelf: "flex-end",
+        marginRight: 16
     },
     addButtonText: {
         color: "#fff",

@@ -1,12 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
+import FastImage from 'react-native-fast-image'
+
+
 const TimerScreen = ({ navigation, route }: any) => {
-    const { Title, Description, Duration } = route.params;
+    const { Title, Description, Duration, HabitTypes } = route.params;
     const totalSeconds = Math.round(parseFloat(Duration) * 60);
 
     const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
     const [isRunning, setIsRunning] = useState(false);
+
+    const habitGifMap: Record<string, any> = {
+        Cardio: require('../../assets/images/Cardio.gif'),
+        Strength: require('../../assets/images/Strength.gif'),
+        Meditation: require('../../assets/images/Meditation.gif'),
+        Study: require('../../assets/images/Study.gif'),
+    };
+
+    // Fallback if habit type doesn't match
+    const selectedGif = habitGifMap[HabitTypes] || require('../../assets/images/walk.gif');
+
+
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
@@ -49,7 +64,24 @@ const TimerScreen = ({ navigation, route }: any) => {
             <Text style={styles.HabitTitle}>{Title}</Text>
             <Text style={styles.HabitDescription}>{Description}</Text>
 
+            <View style={{
+                height: 200, width: 200,
+                backgroundColor: "#0a0a0a20",
+                justifyContent: "center", alignItems: "center"
+            }}>
+                {
+                    isRunning ?
+                        <FastImage
+                            style={{ width: 200, height: 200 }}
+                            source={selectedGif}
 
+                        /> :
+                        <Image
+                            style={{ width: 200, height: 200 }}
+                            source={selectedGif} />
+                }
+
+            </View>
 
 
             <Text style={styles.TimerText}>{formatTime(secondsLeft)}</Text>

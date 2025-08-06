@@ -41,6 +41,7 @@ const ProfileScreen: React.FC = () => {
 
     const [editVisible, setEditVisible] = useState<boolean>(false);
     const [editProfile, setEditProfile] = useState<Profile>({ ...profile });
+    const [showFrequencyList, setShowFrequencyList] = useState<boolean>(false);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -173,22 +174,123 @@ const ProfileScreen: React.FC = () => {
                 ) : null}
             </ScrollView>
 
-            <Modal visible={editVisible} animationType="slide">
-                <ScrollView style={{ padding: 20 }}>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Edit Profile</Text>
-                    {(['name', 'age', 'gender', 'occupation', 'frequency', 'description'] as (keyof Profile)[]).map(key => (
-                        <TextInput
-                            key={key}
-                            style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10, borderRadius: 8 }}
-                            placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
-                            value={editProfile[key]}
-                            onChangeText={text => setEditProfile(prev => ({ ...prev, [key]: text }))}
-                        />
-                    ))}
-                    <Button title="Save" onPress={handleSave} />
-                    <Button title="Cancel" color="red" onPress={() => setEditVisible(false)} />
-                </ScrollView>
+            <Modal visible={editVisible} animationType="fade" transparent>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <Text style={styles.modalTitle}>Edit Profile</Text>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            {/* Name */}
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Name</Text>
+                                <TextInput
+                                    style={styles.inputField}
+                                    placeholder="Enter Name"
+                                    value={editProfile.name}
+                                    onChangeText={text => setEditProfile(prev => ({ ...prev, name: text }))}
+                                />
+                            </View>
+
+                            {/* Age */}
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Age</Text>
+                                <TextInput
+                                    style={styles.inputField}
+                                    placeholder="Enter Age"
+                                    keyboardType="numeric"
+                                    value={editProfile.age}
+                                    onChangeText={text => setEditProfile(prev => ({ ...prev, age: text }))}
+                                />
+                            </View>
+
+                            {/* Gender - Custom Radio */}
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Gender</Text>
+                                <View style={styles.radioContainer}>
+                                    {['Male', 'Female'].map(option => (
+                                        <TouchableOpacity
+                                            key={option}
+                                            style={styles.radioOption}
+                                            onPress={() => setEditProfile(prev => ({ ...prev, gender: option }))}
+                                        >
+                                            <View style={[styles.radioOuter, editProfile.gender === option && styles.radioOuterSelected]}>
+                                                {editProfile.gender === option && <View style={styles.radioInner} />}
+                                            </View>
+                                            <Text style={styles.radioLabel}>{option}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* Occupation */}
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Occupation</Text>
+                                <TextInput
+                                    style={styles.inputField}
+                                    placeholder="Enter Occupation"
+                                    value={editProfile.occupation}
+                                    onChangeText={text => setEditProfile(prev => ({ ...prev, occupation: text }))}
+                                />
+                            </View>
+
+                            {/* Habit Frequency - Custom Dropdown */}
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Habit Frequency</Text>
+                                <TouchableOpacity
+                                    style={styles.dropdown}
+                                    onPress={() => setShowFrequencyList(!showFrequencyList)}
+                                >
+                                    <Text style={{ color: editProfile.frequency ? '#000' : '#888' }}>
+                                        {editProfile.frequency || 'Select Frequency'}
+                                    </Text>
+                                    <FontAwesome name={showFrequencyList ? 'chevron-up' : 'chevron-down'} size={16} color="#555" />
+                                </TouchableOpacity>
+
+                                {showFrequencyList && (
+                                    <View style={styles.dropdownList}>
+                                        {['Daily', '2-3 Days a week', '4-5 Days a week'].map(option => (
+                                            <TouchableOpacity
+                                                key={option}
+                                                style={styles.dropdownItem}
+                                                onPress={() => {
+                                                    setEditProfile(prev => ({ ...prev, frequency: option }));
+                                                    setShowFrequencyList(false);
+                                                }}
+                                            >
+                                                <Text>{option}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+                            </View>
+
+                            {/* Description */}
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Description</Text>
+                                <TextInput
+                                    style={[styles.inputField, { height: 80, textAlignVertical: 'top' }]}
+                                    placeholder="Enter Description"
+                                    multiline
+                                    value={editProfile.description}
+                                    onChangeText={text => setEditProfile(prev => ({ ...prev, description: text }))}
+                                />
+                            </View>
+                        </ScrollView>
+
+                        {/* Buttons */}
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                                <Text style={styles.saveText}>Save</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.cancelButton} onPress={() => setEditVisible(false)}>
+                                <Text style={styles.cancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
             </Modal>
+
+
         </View>
     );
 };
@@ -329,6 +431,133 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 20,
     },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    modalCard: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 20,
+        width: '100%',
+        maxHeight: '80%',
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+        color: '#2d3436',
+    },
+    inputGroup: {
+        marginBottom: 15,
+    },
+    inputLabel: {
+        fontSize: 14,
+        color: '#636e72',
+        marginBottom: 5,
+        fontWeight: '500',
+    },
+    inputField: {
+        borderWidth: 1,
+        borderColor: '#dfe6e9',
+        borderRadius: 10,
+        padding: 10,
+        fontSize: 15,
+        backgroundColor: '#f9f9f9',
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
+    saveButton: {
+        backgroundColor: '#27ae60',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        flex: 1,
+        marginRight: 10,
+    },
+    saveText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#e74c3c',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        flex: 1,
+        marginLeft: 10,
+    },
+    cancelText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    radioContainer: {
+        flexDirection: 'row',
+        gap: 20,
+        marginTop: 5,
+    },
+    radioOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    radioOuter: {
+        height: 20,
+        width: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: '#999',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    radioOuterSelected: {
+        borderColor: '#27ae60',
+    },
+    radioInner: {
+        height: 10,
+        width: 10,
+        backgroundColor: '#27ae60',
+        borderRadius: 5,
+    },
+    radioLabel: {
+        fontSize: 15,
+        color: '#333',
+    },
+
+    dropdown: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 10,
+        padding: 10,
+        backgroundColor: '#f9f9f9',
+    },
+    dropdownList: {
+        marginTop: 5,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 10,
+        backgroundColor: '#fff',
+        overflow: 'hidden',
+    },
+    dropdownItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+
 });
 
 export default ProfileScreen;
