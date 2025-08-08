@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import HomeScreen from './DashBoardItems/HomeScreen';
@@ -12,10 +12,8 @@ function Dashboard() {
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
-                tabBarIcon: ({ color, size }) => {
-                    // Use the FontAwesome icon name type from the library
-                    type FontAwesomeIconName = React.ComponentProps<typeof FontAwesome>['name'];
-                    let iconName: FontAwesomeIconName = 'home';
+                tabBarIcon: ({ color }) => {
+                    let iconName: React.ComponentProps<typeof FontAwesome>['name'] = 'home';
 
                     if (route.name === 'Home') {
                         iconName = 'home';
@@ -31,7 +29,8 @@ function Dashboard() {
                 tabBarInactiveTintColor: 'gray',
                 headerShown: false,
 
-                // Make tab bar float
+                keyboardHidesTabBar: false, // 👈 ADD THIS LINE
+
                 tabBarStyle: {
                     position: 'absolute',
                     bottom: 10,
@@ -56,6 +55,7 @@ function Dashboard() {
                     fontSize: 12,
                 },
             })}
+
         >
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Stats" component={StatsScreen} />

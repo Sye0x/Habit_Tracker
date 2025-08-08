@@ -1,5 +1,4 @@
 import { StyleSheet, View, ImageBackground, Text, TouchableOpacity } from 'react-native';
-import { createStackNavigator } from '@react-navigation/stack';
 
 function GetStarted({ navigation }: any) {
 
