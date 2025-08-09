@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     cardTitle: { fontSize: 20, fontWeight: "600", color: "#222", marginBottom: 6 },
     cardSubtitle: { fontSize: 16, color: "#444", lineHeight: 22 },
     Card: {
-        borderRadius: 20, elevation: 8, height: 200, backgroundColor: "#fff",
+        borderRadius: 20, elevation: 8, height: 220, backgroundColor: "#fff",
         shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.2, shadowRadius: 10,
     },

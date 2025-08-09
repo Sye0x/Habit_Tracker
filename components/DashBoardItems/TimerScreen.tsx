@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
-import FastImage from 'react-native-fast-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type CardDetail = {
@@ -45,7 +44,7 @@ const TimerScreen = ({ navigation, route }: Props) => {
         Meditation: require('../../assets/images/Meditation.gif'),
         Study: require('../../assets/images/Study.gif'),
     };
-    const selectedGif = habitGifMap[HabitTypes] || require('../../assets/images/walk.gif');
+    const selectedGif = habitGifMap[HabitTypes] || require('../../assets/images/Cardio.gif');
 
     // Load custom cards from storage
     useEffect(() => {
@@ -105,11 +104,7 @@ const TimerScreen = ({ navigation, route }: Props) => {
             </Text>
 
             <View style={styles.gifContainer}>
-                {isRunning ? (
-                    <FastImage style={styles.gif} source={selectedGif} />
-                ) : (
-                    <Image style={styles.gif} source={selectedGif} />
-                )}
+
             </View>
 
             <Text style={styles.TimerText}>{formatTime(secondsLeft)}</Text>

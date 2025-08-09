@@ -2,9 +2,11 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
+import { FontAwesome6 } from "@react-native-vector-icons/fontawesome6";
 import HomeScreen from './DashBoardItems/HomeScreen';
 import ProfileScreen from './DashBoardItems/ProfileScreen';
 import StatsScreen from './DashBoardItems/StatsScreen';
+import DietScreen from './DashBoardItems/DietScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -21,6 +23,8 @@ function Dashboard() {
                         iconName = 'user';
                     } else if (route.name === 'Stats') {
                         iconName = 'check-square-o';
+                    } else if (route.name === 'Diet') {
+                        iconName = 'cutlery';
                     }
 
                     return <FontAwesome name={iconName} size={24} color={color} />;
@@ -59,7 +63,9 @@ function Dashboard() {
         >
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Stats" component={StatsScreen} />
+            <Tab.Screen name="Diet" component={DietScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
+
         </Tab.Navigator>
     );
 }
