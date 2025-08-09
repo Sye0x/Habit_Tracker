@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import UserDetailsForm from './components/UserDetailsForm';
 import TimerScreen from './components/DashBoardItems/TimerScreen';
 import DietDetailScreen from './components/DashBoardItems/DietComponents/DietDetailScreen';
+import CalorieCounterScreen from './components/DashBoardItems/DietComponents/CalorieCounterScreen';
 
 export type RootStackParamList = {
   GetStarted: undefined;
@@ -14,6 +15,7 @@ export type RootStackParamList = {
   TimerScreen: undefined;
   DietListScreen: undefined;
   DietDetailScreen: { DietPlanName: string };
+  CalorieCounterScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -27,6 +29,7 @@ function App() {
         <Stack.Screen name="UserDetailsForm" component={UserDetailsForm} options={{ headerShown: false }} />
         <Stack.Screen name="TimerScreen" component={TimerScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DietDetailScreen" component={DietDetailScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="CalorieCounterScreen" component={CalorieCounterScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
