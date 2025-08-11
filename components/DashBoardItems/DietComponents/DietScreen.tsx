@@ -37,13 +37,7 @@ export default function DietListScreen({ navigation }: any) {
                 contentContainerStyle={{ paddingBottom: 30 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={styles.header}>🍽 Diet Plans</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate("CalorieCounterScreen")}>
-                        <FontAwesome name="calculator" size={22} color="#555" style={{ paddingBottom: 21 }} />
-                    </TouchableOpacity>
-
-                </View>
+                <Text style={styles.header}>🍽 Diet Plans</Text>
 
                 {dietPlans.map((plan, index) => (
                     <TouchableOpacity

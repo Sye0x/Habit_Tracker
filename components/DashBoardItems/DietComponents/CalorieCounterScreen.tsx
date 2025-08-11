@@ -11,15 +11,15 @@ import {
     Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import FontAwesome from "@react-native-vector-icons/fontawesome";
+import { useFocusEffect } from "@react-navigation/native";
 
-const STORAGE_KEY = "@calorie_counter_data";
+
+const STORAGE_KEY = "@calorie_counter_data_array";
 
 type MealName = "breakfast" | "lunch" | "dinner" | "snacks";
 type ErrorsType = Record<MealName | "targetCalories", string>;
 
-export default function CalorieCounterScreen({ navigation }: any) {
-    // State for each meal input and errors
+export default function CalorieCounterScreen() {
     const [breakfast, setBreakfast] = useState("");
     const [lunch, setLunch] = useState("");
     const [dinner, setDinner] = useState("");
@@ -69,7 +69,7 @@ export default function CalorieCounterScreen({ navigation }: any) {
 
     const targetCalorieNum = parseInt(targetCalories) || 0;
 
-    // Save data to AsyncStorage
+    // Save data to AsyncStorage as an array of daily entries
     const saveData = async () => {
         if (
             Object.values(errors).some((e) => e.length > 0) ||
@@ -81,41 +81,75 @@ export default function CalorieCounterScreen({ navigation }: any) {
             );
             return;
         }
+
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const entry = {
+            breakfast: parseInt(breakfast) || 0,
+            lunch: parseInt(lunch) || 0,
+            dinner: parseInt(dinner) || 0,
+            snacks: parseInt(snacks) || 0,
+            totalCalories: totalCalories,
+            date: today,
+        };
+
         try {
-            const data = {
-                breakfast,
-                lunch,
-                dinner,
-                snacks,
-                targetCalories,
-            };
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            const stored = await AsyncStorage.getItem(STORAGE_KEY);
+            let dataArray = stored ? JSON.parse(stored) : [];
+
+            // Check if today's entry exists
+            const existingIndex = dataArray.findIndex((item: any) => item.date === today);
+
+            if (existingIndex !== -1) {
+                dataArray[existingIndex] = entry; // overwrite
+            } else {
+                dataArray.push(entry); // add new
+            }
+
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataArray));
             Alert.alert("Success", "Your calorie data has been saved.");
         } catch (e) {
             Alert.alert("Error", "Failed to save data.");
         }
     };
 
-    // Load data on mount
-    useEffect(() => {
-        (async () => {
-            try {
-                const json = await AsyncStorage.getItem(STORAGE_KEY);
-                if (json) {
-                    const data = JSON.parse(json);
-                    setBreakfast(data.breakfast || "");
-                    setLunch(data.lunch || "");
-                    setDinner(data.dinner || "");
-                    setSnacks(data.snacks || "");
-                    setTargetCalories(data.targetCalories || "2000");
-                }
-            } catch (e) {
-                console.warn("Failed to load saved data");
-            }
-        })();
-    }, []);
+    useFocusEffect(
+        React.useCallback(() => {
+            let isActive = true;
 
-    // Clear inputs and saved data
+            (async () => {
+                try {
+                    const stored = await AsyncStorage.getItem(STORAGE_KEY);
+                    if (stored && isActive) {
+                        const dataArray = JSON.parse(stored);
+                        const today = new Date().toISOString().split("T")[0];
+                        const todayEntry = dataArray.find((item: any) => item.date === today);
+
+                        if (todayEntry) {
+                            setBreakfast(todayEntry.breakfast.toString());
+                            setLunch(todayEntry.lunch.toString());
+                            setDinner(todayEntry.dinner.toString());
+                            setSnacks(todayEntry.snacks.toString());
+                        } else {
+                            // If no entry today, reset inputs or keep as is
+                            setBreakfast("");
+                            setLunch("");
+                            setDinner("");
+                            setSnacks("");
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Failed to load saved data");
+                }
+            })();
+
+            return () => {
+                isActive = false;
+            };
+        }, [])
+    );
+
+
+    // Clear all entries and reset inputs
     const clearAll = async () => {
         setBreakfast("");
         setLunch("");
@@ -131,6 +165,7 @@ export default function CalorieCounterScreen({ navigation }: any) {
         });
         try {
             await AsyncStorage.removeItem(STORAGE_KEY);
+            Alert.alert("Success", "All saved data cleared.");
         } catch {
             // ignore error
         }
@@ -151,13 +186,7 @@ export default function CalorieCounterScreen({ navigation }: any) {
                 contentContainerStyle={styles.container}
                 keyboardShouldPersistTaps="handled"
             >
-
-                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 30, gap: 10 }}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} >
-                        <FontAwesome name="arrow-left" size={22} color="#333" />
-                    </TouchableOpacity>
-                    <Text style={styles.header}>Calorie Counter</Text>
-                </View>
+                <Text style={[styles.header, { marginBottom: 20 }]}>Calorie Counter</Text>
 
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Set your daily calorie target (kcal)</Text>
@@ -237,7 +266,6 @@ const styles = StyleSheet.create({
     header: {
         fontSize: 28,
         fontWeight: "bold",
-
         textAlign: "center",
         color: "#2d3436",
     },

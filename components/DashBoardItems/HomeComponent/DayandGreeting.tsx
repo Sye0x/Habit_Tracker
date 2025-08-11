@@ -67,13 +67,13 @@ function DayandGreeting() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "Past": return { backgroundColor: "#b7efb2" };
+            case "Past": return { backgroundColor: "#e0e0e0" };
             case "Future": return { backgroundColor: "#e0e0e0" };
-            default: return { backgroundColor: "#000000ff" };
+            default: return { backgroundColor: "#e0e0e0" };
         }
     };
 
-    const getStatusText = (status: string) => status === "Today" ? { color: "#fff" } : {};
+    const getStatusText = (status: string) => status === "Today" ? { color: "#000" } : {};
 
     useEffect(() => {
         getUserData();
@@ -113,7 +113,7 @@ function DayandGreeting() {
                                 <Text style={[
                                     { fontSize: 18, fontWeight: 'bold' },
                                     getStatusText(item.status),
-                                    isSelected && { color: "#fff" }
+                                    isSelected && { color: "#000" }
                                 ]}>
                                     {item.date}
                                 </Text>

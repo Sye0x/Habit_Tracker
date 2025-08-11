@@ -1,13 +1,10 @@
 import React from 'react';
-import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
-import { FontAwesome6 } from "@react-native-vector-icons/fontawesome6";
 import HomeScreen from './DashBoardItems/HomeScreen';
 import ProfileScreen from './DashBoardItems/ProfileScreen';
 import StatsScreen from './DashBoardItems/StatsScreen';
-import DietScreen from './DashBoardItems/DietScreen';
-
+import dietScreen from './DashBoardItems/DietScreens';
 const Tab = createBottomTabNavigator();
 
 function Dashboard() {
@@ -29,23 +26,17 @@ function Dashboard() {
 
                     return <FontAwesome name={iconName} size={24} color={color} />;
                 },
-                tabBarActiveTintColor: '#ef9393ff',
+                tabBarActiveTintColor: '#ff9595ff',
                 tabBarInactiveTintColor: 'gray',
                 headerShown: false,
 
-                keyboardHidesTabBar: false, // 👈 ADD THIS LINE
+                // 👇 This is the new prop
+                tabBarHideOnKeyboard: false,
 
                 tabBarStyle: {
-                    position: 'absolute',
-                    bottom: 10,
-                    marginHorizontal: 50,
                     elevation: 5,
                     backgroundColor: '#abd1a3ff',
-                    borderRadius: 25,
                     height: 55,
-
-                    paddingBottom: Platform.OS === 'android' ? 10 : 20,
-
                     shadowColor: '#000',
                     shadowOffset: {
                         width: 0,
@@ -59,14 +50,13 @@ function Dashboard() {
                     fontSize: 12,
                 },
             })}
-
         >
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Stats" component={StatsScreen} />
-            <Tab.Screen name="Diet" component={DietScreen} />
+            <Tab.Screen name="Diet" component={dietScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
-
         </Tab.Navigator>
+
     );
 }
 
