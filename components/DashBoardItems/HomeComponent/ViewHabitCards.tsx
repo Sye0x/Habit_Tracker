@@ -164,7 +164,7 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff" },
+    container: { flex: 1, backgroundColor: "#f0f4f8", },
     cardTitle: { fontSize: 20, fontWeight: "600", color: "#222", marginBottom: 6 },
     cardSubtitle: { fontSize: 16, color: "#444", lineHeight: 22 },
     Card: {

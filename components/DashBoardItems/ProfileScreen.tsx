@@ -9,10 +9,11 @@ import {
     ScrollView,
     Modal,
     TextInput,
-    Button,
+    Alert,
 } from 'react-native';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 interface Profile {
     name: string;
@@ -24,9 +25,10 @@ interface Profile {
     followers: string;
     friends: string;
     lastUpdated: string;
+    photoUri?: string;  // add photoUri to store image path
 }
 
-const ProfileScreen: React.FC = () => {
+function ProfileScreen({ navigation }: { navigation: any }) {
     const [profile, setProfile] = useState<Profile>({
         name: '',
         age: '',
@@ -37,6 +39,7 @@ const ProfileScreen: React.FC = () => {
         followers: '0',
         friends: '0',
         lastUpdated: '',
+        photoUri: undefined,
     });
 
     const [editVisible, setEditVisible] = useState<boolean>(false);
@@ -55,10 +58,11 @@ const ProfileScreen: React.FC = () => {
                 const followers = await AsyncStorage.getItem('followers') || '0';
                 const friends = await AsyncStorage.getItem('friends') || '0';
                 const lastUpdated = await AsyncStorage.getItem('lastUpdated') || '';
+                const photoUri = await AsyncStorage.getItem('photoUri') || undefined;
 
                 const loadedProfile: Profile = {
                     name, age, occupation, gender, frequency,
-                    description, followers, friends, lastUpdated
+                    description, followers, friends, lastUpdated, photoUri
                 };
 
                 setProfile(loadedProfile);
@@ -86,9 +90,34 @@ const ProfileScreen: React.FC = () => {
             await AsyncStorage.setItem('frequency', updatedProfile.frequency);
             await AsyncStorage.setItem('description', updatedProfile.description);
             await AsyncStorage.setItem('lastUpdated', updatedProfile.lastUpdated);
+            if (updatedProfile.photoUri) {
+                await AsyncStorage.setItem('photoUri', updatedProfile.photoUri);
+            }
         } catch (error) {
             console.error('Failed to save profile:', error);
         }
+    };
+
+    // Image picker function
+    const pickImage = () => {
+        launchImageLibrary(
+            {
+                mediaType: 'photo',
+                quality: 0.7,
+            },
+            (response) => {
+                if (response.didCancel) {
+                    // user cancelled
+                } else if (response.errorCode) {
+                    Alert.alert('Error', response.errorMessage || 'Error picking image');
+                } else if (response.assets && response.assets.length > 0) {
+                    const uri = response.assets[0].uri;
+                    if (uri) {
+                        setEditProfile(prev => ({ ...prev, photoUri: uri }));
+                    }
+                }
+            }
+        );
     };
 
     return (
@@ -97,30 +126,19 @@ const ProfileScreen: React.FC = () => {
                 <TouchableOpacity style={styles.optionsButton} onPress={() => setEditVisible(true)}>
                     <FontAwesome name="pencil" color={'#000'} size={24} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.optionsButton}>
+                <TouchableOpacity style={styles.optionsButton} onPress={() => navigation.navigate("SettingsScreen")}>
                     <FontAwesome name="cog" color={'#000'} size={24} />
                 </TouchableOpacity>
             </ImageBackground>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingRight: 20 }}>
-                <Image source={require('../../assets/images/avatar.jpg')} style={styles.profilepic} />
-                <TouchableOpacity style={styles.addFriendsButton}>
-                    <Text style={{ color: '#ff924eff', fontWeight: 'bold' }}>+ Friends</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', paddingRight: 20 }}>
+                <TouchableOpacity onPress={pickImage}>
+                    {profile.photoUri ? (
+                        <Image source={{ uri: profile.photoUri }} style={styles.profilepic} />
+                    ) : (
+                        <Image source={require('../../assets/images/avatar.jpg')} style={styles.profilepic} />
+                    )}
                 </TouchableOpacity>
-            </View>
-
-            <View style={styles.headerRow}>
-                <Text style={[styles.name, { flex: 1 }]}>{profile.name}</Text>
-
-                <View style={styles.statBox}>
-                    <Text style={styles.statCount}>{profile.followers}</Text>
-                    <Text style={styles.statLabel}>Followers</Text>
-                </View>
-
-                <View style={styles.statBox}>
-                    <Text style={styles.statCount}>{profile.friends}</Text>
-                    <Text style={styles.statLabel}>Friends</Text>
-                </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
@@ -128,35 +146,30 @@ const ProfileScreen: React.FC = () => {
                     <Text style={styles.cardTitle}>Profile Details</Text>
 
                     <View style={styles.infoRow}>
-                        <FontAwesome name="birthday-cake" size={20} color="#636e72" style={styles.icon} />
                         <Text style={styles.label}>Age</Text>
                         <Text style={styles.value}>{profile.age}</Text>
                     </View>
                     <View style={styles.divider} />
 
                     <View style={styles.infoRow}>
-                        <FontAwesome name="venus-mars" size={20} color="#636e72" style={styles.icon} />
                         <Text style={styles.label}>Gender</Text>
                         <Text style={styles.value}>{profile.gender}</Text>
                     </View>
                     <View style={styles.divider} />
 
                     <View style={styles.infoRow}>
-                        <FontAwesome name="briefcase" size={20} color="#636e72" style={styles.icon} />
                         <Text style={styles.label}>Occupation</Text>
                         <Text style={styles.value}>{profile.occupation}</Text>
                     </View>
                     <View style={styles.divider} />
 
                     <View style={styles.infoRow}>
-                        <FontAwesome name="clock-o" size={20} color="#636e72" style={styles.icon} />
-                        <Text style={styles.label}>Habit{`\n`}Frequency</Text>
+                        <Text style={styles.label}>Habit Frequency</Text>
                         <Text style={styles.value}>{profile.frequency}</Text>
                     </View>
                     <View style={styles.divider} />
 
                     <View style={[styles.infoRow, { alignItems: 'flex-start' }]}>
-                        <FontAwesome name="info-circle" size={20} color="#636e72" style={styles.icon} />
                         <Text style={styles.label}>Description</Text>
                         <Text style={[styles.value, { flex: 1 }]}>{profile.description}</Text>
                     </View>
@@ -174,12 +187,26 @@ const ProfileScreen: React.FC = () => {
                 ) : null}
             </ScrollView>
 
+            {/* Edit modal unchanged except adding image picker on profile pic */}
             <Modal visible={editVisible} animationType="fade" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
                         <Text style={styles.modalTitle}>Edit Profile</Text>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
+
+                            {/* Profile Image Picker */}
+                            <TouchableOpacity onPress={pickImage} style={{ alignSelf: 'center', marginBottom: 20 }}>
+                                {editProfile.photoUri ? (
+                                    <Image source={{ uri: editProfile.photoUri }} style={styles.profilepic} />
+                                ) : (
+                                    <Image source={require('../../assets/images/avatar.jpg')} style={styles.profilepic} />
+                                )}
+                                <Text style={{ textAlign: 'center', color: '#27ae60', marginTop: 8 }}>
+                                    Tap to change photo
+                                </Text>
+                            </TouchableOpacity>
+
                             {/* Name */}
                             <View style={styles.inputGroup}>
                                 <Text style={styles.inputLabel}>Name</Text>
@@ -203,7 +230,7 @@ const ProfileScreen: React.FC = () => {
                                 />
                             </View>
 
-                            {/* Gender - Custom Radio */}
+                            {/* Gender */}
                             <View style={styles.inputGroup}>
                                 <Text style={styles.inputLabel}>Gender</Text>
                                 <View style={styles.radioContainer}>
@@ -233,7 +260,7 @@ const ProfileScreen: React.FC = () => {
                                 />
                             </View>
 
-                            {/* Habit Frequency - Custom Dropdown */}
+                            {/* Habit Frequency */}
                             <View style={styles.inputGroup}>
                                 <Text style={styles.inputLabel}>Habit Frequency</Text>
                                 <TouchableOpacity
@@ -243,7 +270,6 @@ const ProfileScreen: React.FC = () => {
                                     <Text style={{ color: editProfile.frequency ? '#000' : '#888' }}>
                                         {editProfile.frequency || 'Select Frequency'}
                                     </Text>
-                                    <FontAwesome name={showFrequencyList ? 'chevron-up' : 'chevron-down'} size={16} color="#555" />
                                 </TouchableOpacity>
 
                                 {showFrequencyList && (
@@ -277,7 +303,6 @@ const ProfileScreen: React.FC = () => {
                             </View>
                         </ScrollView>
 
-                        {/* Buttons */}
                         <View style={styles.modalButtons}>
                             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                                 <Text style={styles.saveText}>Save</Text>
@@ -289,8 +314,6 @@ const ProfileScreen: React.FC = () => {
                     </View>
                 </View>
             </Modal>
-
-
         </View>
     );
 };
@@ -298,7 +321,7 @@ const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: "#f0f4f8",
         paddingBottom: 80
     },
     imagebg: {
@@ -323,7 +346,7 @@ const styles = StyleSheet.create({
         width: 120,
         borderRadius: 60,
         borderWidth: 3,
-        borderColor: '#fff',
+        borderColor: "#f0f4f8",
         marginTop: -60,
         marginLeft: 20,
     },
@@ -557,6 +580,8 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
     },
+
+
 
 });
 

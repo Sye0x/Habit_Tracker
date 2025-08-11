@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import DayandGreeting from './HomeComponent/DayandGreeting';
 import ViewCardModal from './HomeComponent/ViewHabitCards';
+import { FontAwesome5 } from "@react-native-vector-icons/fontawesome5";
 
 type CardDetail = {
     title: string;
@@ -249,7 +250,7 @@ function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+    container: { flex: 1, padding: 20, backgroundColor: "#f0f4f8", },
     modalWrapper: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
     modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
     modalContent: { width: '90%', maxWidth: 350, borderRadius: 20, padding: 20, backgroundColor: '#fff', elevation: 10 },

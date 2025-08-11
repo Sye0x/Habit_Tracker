@@ -85,7 +85,7 @@ const StatsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         padding: 20,
-        backgroundColor: '#FAFAFA',
+        backgroundColor: "#f0f4f8",
         flexGrow: 1,
     },
     title: {
