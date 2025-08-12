@@ -1,17 +1,17 @@
-
-import { StyleSheet, View, Text, Pressable, } from 'react-native';
+import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FlatList } from 'react-native-gesture-handler';
-
+import { useSelector } from 'react-redux';
+import type { RootState } from './../../redux/rootReducer';  // Adjust the path as needed
 
 type Day = { date: number; status: string; day: number };
 
 function DayandGreeting() {
+    // Get dark mode value from Redux store
+    const isDark = useSelector((state: RootState) => state.theme);
 
     const [name, setName] = useState<string>("");
-
-
     const [week, setWeek] = useState<Day[]>([]);
     const today = new Date();
     const currentYear = today.getFullYear();
@@ -26,11 +26,13 @@ function DayandGreeting() {
         "July", "August", "September", "October", "November", "December"
     ];
 
+    // Load user name from AsyncStorage
     const getUserData = async () => {
         const usersName = await AsyncStorage.getItem("name");
         setName(usersName ?? "");
     };
 
+    // Prepare days for current week
     const getDays = () => {
         const dateOfWeek: Day[] = [];
         const lastDayOfPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
@@ -65,20 +67,22 @@ function DayandGreeting() {
 
     const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
+    // Style helpers for background and text color depending on status and theme
     const getStatusColor = (status: string) => {
-        switch (status) {
-            case "Past": return { backgroundColor: "#e0e0e0" };
-            case "Future": return { backgroundColor: "#e0e0e0" };
-            default: return { backgroundColor: "#e0e0e0" };
-        }
+        const baseColor = isDark ? "#333" : "#e0e0e0";
+        return { backgroundColor: baseColor };
     };
 
-    const getStatusText = (status: string) => status === "Today" ? { color: "#000" } : {};
+    const getStatusText = (status: string) => {
+        if (status === "Today") {
+            return { color: isDark ? "#fff" : "#000" };
+        }
+        return { color: isDark ? "#ddd" : "#000" };
+    };
 
     useEffect(() => {
         getUserData();
         getDays();
-
     }, []);
 
     useEffect(() => {
@@ -86,9 +90,16 @@ function DayandGreeting() {
     }, [week]);
 
     return (
-        <View>
-            <Text style={styles.greeting}>Good Morning {name}</Text>
-            <Text style={{ fontSize: 22, marginBottom: 10, marginLeft: 10 }}>
+        <View style={[{ backgroundColor: isDark ? "#000" : "#f0f4f8" }]}>
+            <Text style={[styles.greeting, { color: isDark ? "#fff" : "#000" }]}>
+                Good Morning {name}
+            </Text>
+            <Text style={{
+                fontSize: 22,
+                marginBottom: 10,
+                marginLeft: 10,
+                color: isDark ? "#fff" : "#000"
+            }}>
                 {currentDate}, {Months[currentMonth]}
             </Text>
 
@@ -113,7 +124,7 @@ function DayandGreeting() {
                                 <Text style={[
                                     { fontSize: 18, fontWeight: 'bold' },
                                     getStatusText(item.status),
-                                    isSelected && { color: "#000" }
+                                    isSelected && { color: isDark ? "#000" : "#000" }
                                 ]}>
                                     {item.date}
                                 </Text>
@@ -130,7 +141,6 @@ function DayandGreeting() {
                 />
             </View>
         </View>
-
     );
 }
 
@@ -147,27 +157,9 @@ const styles = StyleSheet.create({
     greeting: {
         fontSize: 24,
         fontWeight: "bold",
-        color: "#000",
         marginBottom: 10,
         marginLeft: 10
     },
-    cardTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: "#222",
-        marginBottom: 6,
-    },
-    cardSubtitle: {
-        fontSize: 16,
-        color: "#444",
-        lineHeight: 22,
-    },
-
-
-
 });
 
-
 export default DayandGreeting;
-
-

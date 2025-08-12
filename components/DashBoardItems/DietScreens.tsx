@@ -1,30 +1,54 @@
+import React, { useEffect } from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import DietScreenPlans from "./DietComponents/DietScreen";
 import CalorieCounter from "./DietComponents/CalorieCounterScreen";
 import DietHistory from "./DietComponents/DietHistory";
 import { View, StyleSheet } from "react-native";
 
+import { useDispatch, useSelector } from "react-redux";
+import { toggletheme } from "../redux/action"; // adjust path if needed
+import type { RootState } from "../redux/rootReducer"; // adjust path if needed
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const Tab = createMaterialTopTabNavigator();
 
 export default function DietScreen() {
+    const dispatch = useDispatch();
+    const darkMode = useSelector((state: RootState) => state.theme);
+
+    useEffect(() => {
+        (async () => {
+            const savedTheme = await AsyncStorage.getItem("colorMode");
+            if (savedTheme !== null) {
+                const parsedTheme = JSON.parse(savedTheme);
+                if (parsedTheme !== darkMode) {
+                    dispatch(toggletheme(parsedTheme));
+                }
+            }
+        })();
+    }, []);
+
+    const styles = getStyles(darkMode);
+
     return (
         <View style={styles.container}>
             <Tab.Navigator
                 screenOptions={{
                     tabBarStyle: {
-                        backgroundColor: "#ffffff",
-                        elevation: 4, // Android shadow
-                        shadowOpacity: 0.1, // iOS shadow
+                        backgroundColor: darkMode ? "#121212" : "#ffffff",
+                        elevation: 4,
+                        shadowOpacity: 0.1,
                         shadowRadius: 3,
                         shadowOffset: { width: 0, height: 2 },
                     },
                     tabBarLabelStyle: {
                         fontSize: 14,
                         fontWeight: "bold",
-                        textTransform: "capitalize", // Keep first letter capital only
+                        textTransform: "capitalize",
+                        color: darkMode ? "#e0e0e0" : undefined,
                     },
-                    tabBarActiveTintColor: "#3B82F6", // Active tab color
-                    tabBarInactiveTintColor: "#6B7280", // Inactive tab color
+                    tabBarActiveTintColor: "#3B82F6",
+                    tabBarInactiveTintColor: darkMode ? "#9CA3AF" : "#6B7280",
                     tabBarIndicatorStyle: {
                         backgroundColor: "#3B82F6",
                         height: 3,
@@ -40,9 +64,10 @@ export default function DietScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F3F4F6", // Light background behind tabs
-    },
-});
+const getStyles = (darkMode: boolean) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: darkMode ? "#121212" : "#F3F4F6",
+        },
+    });

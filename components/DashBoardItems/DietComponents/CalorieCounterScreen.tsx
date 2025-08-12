@@ -12,7 +12,9 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-
+import { useDispatch, useSelector } from "react-redux";
+import { toggletheme } from "../../redux/action"; // Adjust path
+import type { RootState } from "../../redux/rootReducer"; // Adjust path
 
 const STORAGE_KEY = "@calorie_counter_data_array";
 
@@ -20,6 +22,21 @@ type MealName = "breakfast" | "lunch" | "dinner" | "snacks";
 type ErrorsType = Record<MealName | "targetCalories", string>;
 
 export default function CalorieCounterScreen() {
+    const dispatch = useDispatch();
+    const darkMode = useSelector((state: RootState) => state.theme);
+
+    useEffect(() => {
+        (async () => {
+            const savedTheme = await AsyncStorage.getItem("colorMode");
+            if (savedTheme !== null) {
+                const parsedTheme = JSON.parse(savedTheme);
+                if (parsedTheme !== darkMode) {
+                    dispatch(toggletheme(parsedTheme));
+                }
+            }
+        })();
+    }, []);
+
     const [breakfast, setBreakfast] = useState("");
     const [lunch, setLunch] = useState("");
     const [dinner, setDinner] = useState("");
@@ -34,7 +51,6 @@ export default function CalorieCounterScreen() {
         targetCalories: "",
     });
 
-    // Validate input: allow only positive integers
     function validateInput(name: string, value: string) {
         if (value === "") {
             setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -53,14 +69,12 @@ export default function CalorieCounterScreen() {
         }
     }
 
-    // On change handlers with validation
     function handleChange(name: string, value: string, setter: (v: string) => void) {
         if (validateInput(name, value)) {
             setter(value);
         }
     }
 
-    // Calculate total calories
     const totalCalories =
         (parseInt(breakfast) || 0) +
         (parseInt(lunch) || 0) +
@@ -69,12 +83,8 @@ export default function CalorieCounterScreen() {
 
     const targetCalorieNum = parseInt(targetCalories) || 0;
 
-    // Save data to AsyncStorage as an array of daily entries
     const saveData = async () => {
-        if (
-            Object.values(errors).some((e) => e.length > 0) ||
-            targetCalorieNum === 0
-        ) {
+        if (Object.values(errors).some((e) => e.length > 0) || targetCalorieNum === 0) {
             Alert.alert(
                 "Invalid input",
                 "Please fix all errors and set a valid target calorie amount."
@@ -82,7 +92,7 @@ export default function CalorieCounterScreen() {
             return;
         }
 
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const today = new Date().toISOString().split("T")[0];
         const entry = {
             breakfast: parseInt(breakfast) || 0,
             lunch: parseInt(lunch) || 0,
@@ -96,13 +106,12 @@ export default function CalorieCounterScreen() {
             const stored = await AsyncStorage.getItem(STORAGE_KEY);
             let dataArray = stored ? JSON.parse(stored) : [];
 
-            // Check if today's entry exists
             const existingIndex = dataArray.findIndex((item: any) => item.date === today);
 
             if (existingIndex !== -1) {
-                dataArray[existingIndex] = entry; // overwrite
+                dataArray[existingIndex] = entry;
             } else {
-                dataArray.push(entry); // add new
+                dataArray.push(entry);
             }
 
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataArray));
@@ -130,15 +139,14 @@ export default function CalorieCounterScreen() {
                             setDinner(todayEntry.dinner.toString());
                             setSnacks(todayEntry.snacks.toString());
                         } else {
-                            // If no entry today, reset inputs or keep as is
                             setBreakfast("");
                             setLunch("");
                             setDinner("");
                             setSnacks("");
                         }
                     }
-                } catch (e) {
-                    console.warn("Failed to load saved data");
+                } catch {
+                    // ignore
                 }
             })();
 
@@ -148,8 +156,6 @@ export default function CalorieCounterScreen() {
         }, [])
     );
 
-
-    // Clear all entries and reset inputs
     const clearAll = async () => {
         setBreakfast("");
         setLunch("");
@@ -167,33 +173,34 @@ export default function CalorieCounterScreen() {
             await AsyncStorage.removeItem(STORAGE_KEY);
             Alert.alert("Success", "All saved data cleared.");
         } catch {
-            // ignore error
+            // ignore
         }
     };
 
-    // Progress bar width calculation (max 100%)
     const progressWidth =
-        targetCalorieNum > 0
-            ? Math.min((totalCalories / targetCalorieNum) * 100, 100)
-            : 0;
+        targetCalorieNum > 0 ? Math.min((totalCalories / targetCalorieNum) * 100, 100) : 0;
 
     return (
         <KeyboardAvoidingView
-            style={styles.screen}
+            style={[styles.screen, darkMode && styles.screenDark]}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-            <ScrollView
-                contentContainerStyle={styles.container}
-                keyboardShouldPersistTaps="handled"
-            >
-                <Text style={[styles.header, { marginBottom: 20 }]}>Calorie Counter</Text>
+            <ScrollView contentContainerStyle={[styles.container]} keyboardShouldPersistTaps="handled">
+                <Text style={[styles.header, darkMode && styles.headerDark]}>Calorie Counter</Text>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Set your daily calorie target (kcal)</Text>
+                    <Text style={[styles.label, darkMode && styles.labelDark]}>
+                        Set your daily calorie target (kcal)
+                    </Text>
                     <TextInput
-                        style={[styles.input, errors.targetCalories && styles.inputError]}
+                        style={[
+                            styles.input,
+                            errors.targetCalories && styles.inputError,
+                            darkMode && styles.inputDark,
+                        ]}
                         keyboardType="numeric"
                         placeholder="e.g. 2000"
+                        placeholderTextColor={darkMode ? "#aaa" : undefined}
                         value={targetCalories}
                         onChangeText={(v) => handleChange("targetCalories", v, setTargetCalories)}
                     />
@@ -202,19 +209,24 @@ export default function CalorieCounterScreen() {
                     ) : null}
 
                     {(["breakfast", "lunch", "dinner", "snacks"] as MealName[]).map((meal) => {
-                        const label =
-                            meal.charAt(0).toUpperCase() + meal.slice(1) + " (kcal)";
+                        const label = meal.charAt(0).toUpperCase() + meal.slice(1) + " (kcal)";
                         const value = { breakfast, lunch, dinner, snacks }[meal];
                         const error = errors[meal];
-                        const setter = { breakfast: setBreakfast, lunch: setLunch, dinner: setDinner, snacks: setSnacks }[meal];
+                        const setter = {
+                            breakfast: setBreakfast,
+                            lunch: setLunch,
+                            dinner: setDinner,
+                            snacks: setSnacks,
+                        }[meal];
 
                         return (
                             <View key={meal} style={styles.inputGroup}>
-                                <Text style={styles.label}>{label}</Text>
+                                <Text style={[styles.label, darkMode && styles.labelDark]}>{label}</Text>
                                 <TextInput
-                                    style={[styles.input, error && styles.inputError]}
+                                    style={[styles.input, error && styles.inputError, darkMode && styles.inputDark]}
                                     keyboardType="numeric"
                                     placeholder={`Enter ${meal} calories`}
+                                    placeholderTextColor={darkMode ? "#aaa" : undefined}
                                     value={value}
                                     onChangeText={(v) => handleChange(meal, v, setter)}
                                 />
@@ -224,9 +236,13 @@ export default function CalorieCounterScreen() {
                     })}
                 </View>
 
-                {/* Progress Bar */}
                 <View style={styles.progressContainer}>
-                    <View style={styles.progressBarBackground}>
+                    <View
+                        style={[
+                            styles.progressBarBackground,
+                            darkMode && styles.progressBarBackgroundDark,
+                        ]}
+                    >
                         <View
                             style={[
                                 styles.progressBarFill,
@@ -235,18 +251,20 @@ export default function CalorieCounterScreen() {
                             ]}
                         />
                     </View>
-                    <Text style={styles.progressText}>
+                    <Text style={[styles.progressText, darkMode && styles.progressTextDark]}>
                         {totalCalories} / {targetCalorieNum} kcal
                     </Text>
                 </View>
 
-                {/* Total display */}
                 <View style={styles.totalContainer}>
-                    <Text style={styles.totalText}>Total Calories Consumed: </Text>
-                    <Text style={styles.totalValue}>{totalCalories} kcal</Text>
+                    <Text style={[styles.totalText, darkMode && styles.totalTextDark]}>
+                        Total Calories Consumed:{" "}
+                    </Text>
+                    <Text style={[styles.totalValue, darkMode && styles.totalValueDark]}>
+                        {totalCalories} kcal
+                    </Text>
                 </View>
 
-                {/* Buttons */}
                 <View style={styles.buttonsContainer}>
                     <TouchableOpacity style={styles.saveButton} onPress={saveData}>
                         <Text style={styles.buttonText}>Save</Text>
@@ -256,19 +274,25 @@ export default function CalorieCounterScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-        </KeyboardAvoidingView >
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: "#f0f4f8", padding: 20 },
+    screenDark: { backgroundColor: "#121212" },
     container: { paddingBottom: 30 },
+
     header: {
         fontSize: 28,
         fontWeight: "bold",
         textAlign: "center",
         color: "#2d3436",
     },
+    headerDark: {
+        color: "#eee",
+    },
+
     inputGroup: {
         marginBottom: 20,
     },
@@ -278,6 +302,10 @@ const styles = StyleSheet.create({
         marginBottom: 6,
         color: "#2d3436",
     },
+    labelDark: {
+        color: "#eee",
+    },
+
     input: {
         backgroundColor: "white",
         borderRadius: 10,
@@ -288,17 +316,25 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
+        color: "#2d3436",
+    },
+    inputDark: {
+        backgroundColor: "#1e1e1e",
+        color: "#eee",
+        shadowOpacity: 0.3,
     },
     inputError: {
         borderWidth: 1,
         borderColor: "#d63031",
     },
+
     errorText: {
         color: "#d63031",
         marginTop: 4,
         fontSize: 13,
         fontWeight: "600",
     },
+
     progressContainer: {
         marginTop: 30,
         alignItems: "center",
@@ -310,6 +346,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: "hidden",
     },
+    progressBarBackgroundDark: {
+        backgroundColor: "#333",
+    },
     progressBarFill: {
         height: "100%",
         backgroundColor: "#0984e3",
@@ -320,6 +359,10 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#2d3436",
     },
+    progressTextDark: {
+        color: "#eee",
+    },
+
     totalContainer: {
         flexDirection: "row",
         justifyContent: "center",
@@ -330,12 +373,19 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#2d3436",
     },
+    totalTextDark: {
+        color: "#eee",
+    },
     totalValue: {
         fontSize: 20,
         fontWeight: "bold",
         marginLeft: 10,
         color: "#0984e3",
     },
+    totalValueDark: {
+        color: "#74b9ff",
+    },
+
     buttonsContainer: {
         marginTop: 40,
         flexDirection: "row",

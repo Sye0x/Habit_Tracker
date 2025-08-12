@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import React from 'react';
+import { useSelector } from 'react-redux';
+import type { RootState } from './../../redux/rootReducer';  // Adjust path
 
 type CardDetail = {
     title: string;
@@ -23,14 +25,11 @@ type Props = {
 };
 
 // ---- Duration Formatter ----
-// Always expects value in seconds
 const formatDuration = (value: string) => {
     const totalSeconds = parseInt(value, 10) || 0;
-
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-
     return [
         hours.toString().padStart(2, "0"),
         minutes.toString().padStart(2, "0"),
@@ -41,6 +40,9 @@ const formatDuration = (value: string) => {
 function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
     const [selectedCard, setSelectedCard] = useState<CardDetailWithColor | null>(null);
     const [selectedCardIndex, setSelectedCardIndex] = useState<number>(0);
+
+    // Get dark mode boolean from Redux
+    const isDarkMode = useSelector((state: RootState) => state.theme);
 
     const loadCustomCards = async () => {
         const stored = await AsyncStorage.getItem("customCards");
@@ -66,8 +68,10 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
         loadCustomCards();
     }, []);
 
+    const themeStyles = isDarkMode ? darkStyles : lightStyles;
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, themeStyles.container]}>
             <ScrollView style={{ flex: 1, marginBottom: 50, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
                 <View style={{ paddingTop: 20, paddingHorizontal: 10 }}>
                     {customCards
@@ -87,19 +91,14 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
                                     }}
                                     style={[
                                         styles.Card,
-                                        {
-                                            backgroundColor: cardBgColor,
-                                            marginTop: index === 0 ? 0 : -143,
-                                            zIndex: index,
-                                            borderColor: "#00000022",
-                                            borderWidth: 1.5,
-                                            paddingVertical: 20,
-                                            paddingHorizontal: 18,
-                                        }
+                                        isDarkMode
+                                            ? darkStyles.Card
+                                            : { backgroundColor: cardBgColor },
+                                        { marginTop: index === 0 ? 0 : -143, zIndex: index }
                                     ]}
                                 >
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Text style={styles.cardTitle}>{item.title}</Text>
+                                        <Text style={[styles.cardTitle, themeStyles.cardTitle]}>{item.title}</Text>
                                         <Pressable
                                             onPress={() => handleDeleteCard(originalIndex)}
                                             style={{
@@ -111,19 +110,21 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
                                             <FontAwesome name="trash" size={20} color="#fff" />
                                         </Pressable>
                                     </View>
-                                    <View style={{ height: 1, backgroundColor: '#00000022', marginVertical: 4 }} />
-                                    <Text style={styles.cardSubtitle}>{item.description || "No description provided."}</Text>
-                                    <Text style={{ fontSize: 14, color: "#222", marginTop: 4 }}>
+                                    <View style={{ height: 1, backgroundColor: isDarkMode ? '#ffffff33' : '#00000022', marginVertical: 4 }} />
+                                    <Text style={[styles.cardSubtitle, themeStyles.cardSubtitle]}>
+                                        {item.description || "No description provided."}
+                                    </Text>
+                                    <Text style={[{ fontSize: 14, marginTop: 4 }, themeStyles.cardSubtitle]}>
                                         Duration: {formatDuration(item.duration)}
                                     </Text>
-                                    <Text style={{ fontSize: 14, color: "#222", marginTop: 4 }}>
+                                    <Text style={[{ fontSize: 14, marginTop: 4 }, themeStyles.cardSubtitle]}>
                                         Habit Type: {item.habitType}
                                     </Text>
-                                    <Text style={{ fontSize: 14, color: "#222", marginTop: 4 }}>
+                                    <Text style={[{ fontSize: 14, marginTop: 4 }, themeStyles.cardSubtitle]}>
                                         Frequency: {item.frequency}
                                     </Text>
                                     <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 20 }}>
-                                        <Text style={{ fontSize: 12, color: '#555' }}>Tap to view</Text>
+                                        <Text style={{ fontSize: 12, color: isDarkMode ? '#999' : '#555' }}>Tap to view</Text>
                                     </View>
                                 </Pressable>
                             );
@@ -134,16 +135,26 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
             {selectedCard && (
                 <View style={styles.modalWrapper}>
                     <Pressable style={styles.modalOverlay} onPress={() => setSelectedCard(null)} />
-                    <View style={[styles.modalContent, { backgroundColor: selectedCard.backgroundColor }]}>
-                        <Text style={styles.modalTitle}>{selectedCard.title}</Text>
-                        <Text style={styles.modalDescription}>
+                    <View
+                        style={[
+                            styles.modalContent,
+                            { backgroundColor: isDarkMode ? '#222' : selectedCard.backgroundColor },
+                            isDarkMode && darkStyles.modalContentShadow
+                        ]}
+                    >
+                        <Text style={[styles.modalTitle, themeStyles.modalTitle]}>{selectedCard.title}</Text>
+                        <Text style={[styles.modalDescription, themeStyles.modalDescription]}>
                             {selectedCard.description}
                             {"\n\n"}Duration: {formatDuration(selectedCard.duration)}
                         </Text>
                         <View style={{ flexDirection: "row", gap: 10, justifyContent: "center" }}>
-                            <Text style={styles.modalClose} onPress={() => setSelectedCard(null)}>Close</Text>
-                            <Text
-                                style={styles.startTimerButton}
+                            <Pressable
+                                onPress={() => setSelectedCard(null)}
+                                style={[styles.modalButton, isDarkMode ? darkStyles.modalButtonClose : styles.modalClose]}
+                            >
+                                <Text style={isDarkMode ? darkStyles.modalButtonText : styles.modalCloseText}>Close</Text>
+                            </Pressable>
+                            <Pressable
                                 onPress={() => {
                                     setSelectedCard(null);
                                     navigation.navigate("TimerScreen", {
@@ -154,7 +165,10 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
                                         cardIndex: selectedCardIndex,
                                     });
                                 }}
-                            >Start</Text>
+                                style={[styles.modalButton, isDarkMode ? darkStyles.modalButtonStart : styles.startTimerButton]}
+                            >
+                                <Text style={isDarkMode ? darkStyles.modalButtonText : styles.startTimerButtonText}>Start</Text>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -164,13 +178,15 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#f0f4f8", },
-    cardTitle: { fontSize: 20, fontWeight: "600", color: "#222", marginBottom: 6 },
-    cardSubtitle: { fontSize: 16, color: "#444", lineHeight: 22 },
+    container: { flex: 1 },
+    cardTitle: { fontSize: 20, fontWeight: "600", marginBottom: 6 },
+    cardSubtitle: { fontSize: 16, lineHeight: 22 },
     Card: {
-        borderRadius: 20, elevation: 8, height: 220, backgroundColor: "#fff",
-        shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2, shadowRadius: 10,
+        borderRadius: 20,
+        elevation: 8,
+        height: 220,
+        paddingVertical: 20,
+        paddingHorizontal: 18,
     },
     modalWrapper: {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 120,
@@ -179,23 +195,101 @@ const styles = StyleSheet.create({
     modalOverlay: {
         position: 'absolute',
         top: -500, left: -500, right: -500, bottom: -500,
-        backgroundColor: "rgb(0,0,0,0.4)"
+        backgroundColor: "rgba(0,0,0,0.4)"
     },
     modalContent: {
-        width: '90%', maxWidth: 350, borderRadius: 20, padding: 20,
-        backgroundColor: '#fff', elevation: 10,
+        width: '90%', maxWidth: 350, borderRadius: 20, padding: 20, elevation: 10,
     },
     modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
-    modalDescription: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 20 },
+    modalDescription: { fontSize: 16, textAlign: 'center', marginBottom: 20 },
     modalClose: {
         fontSize: 16, backgroundColor: '#fc5a5a', color: '#fff', fontWeight: 'bold',
         paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, textAlign: 'center',
         borderWidth: 1, borderColor: "#000",
     },
+    modalCloseText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+        textAlign: 'center',
+    },
     startTimerButton: {
         fontSize: 16, backgroundColor: '#58d03d', color: '#fff', fontWeight: 'bold',
         paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, textAlign: 'center',
         borderWidth: 1, borderColor: "#000",
+    },
+    startTimerButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    modalButton: {
+        borderRadius: 10,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        minWidth: 100,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginHorizontal: 5,
+    }
+});
+
+const lightStyles = StyleSheet.create({
+    container: { backgroundColor: "#f0f4f8" },
+    cardTitle: { color: "#222" },
+    cardSubtitle: { color: "#444" },
+    modalTitle: { color: "#000" },
+    modalDescription: { color: "#555" },
+});
+
+const darkStyles = StyleSheet.create({
+    container: { backgroundColor: "#121212" },
+    cardTitle: { color: "#fff" },
+    cardSubtitle: { color: "#ccc" },
+    modalTitle: { color: "#fff" },
+    modalDescription: { color: "#ddd" },
+    Card: {
+        backgroundColor: "#1E1E1E",
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#333",
+        elevation: 5,
+        shadowColor: "#ffffff22",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        paddingVertical: 20,
+        paddingHorizontal: 18,
+    },
+    modalContentShadow: {
+        shadowColor: "#ffffff44",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 20,
+    },
+    modalButtonClose: {
+        backgroundColor: "#ff5555",
+        borderWidth: 0,
+        shadowColor: "#ff5555",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.7,
+        shadowRadius: 8,
+    },
+    modalButtonStart: {
+        backgroundColor: "#57d13c",
+        borderWidth: 0,
+        shadowColor: "#57d13c",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.7,
+        shadowRadius: 8,
+    },
+    modalButtonText: {
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: 16,
+        textAlign: "center",
     },
 });
 

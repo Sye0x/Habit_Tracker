@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
     View,
     Text,
@@ -10,13 +10,33 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { toggletheme } from "../../redux/action";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from './../../redux/rootReducer';
 
 export default function SettingsScreen() {
+    const dispatch = useDispatch();
     const navigation = useNavigation();
 
-    const [darkMode, setDarkMode] = useState(false);
-    const [notifications, setNotifications] = useState(true);
+    // Get current theme from redux store
+    const darkMode = useSelector((state: RootState) => state.theme);
+
+    const [notifications, setNotifications] = React.useState(true);
+
+    // Load persisted theme from AsyncStorage on mount
+    useEffect(() => {
+        (async () => {
+            const savedTheme = await AsyncStorage.getItem("colorMode");
+            if (savedTheme !== null) {
+                const parsed = JSON.parse(savedTheme);
+                // If redux theme differs from saved, sync redux
+                if (parsed !== darkMode) {
+                    dispatch(toggletheme(parsed));
+                }
+            }
+        })();
+    }, []);
 
     const handleResetData = () => {
         Alert.alert(
@@ -33,37 +53,53 @@ export default function SettingsScreen() {
         );
     };
 
+    const darkmodeSwitch = async () => {
+        const newMode = !darkMode;
+        dispatch(toggletheme(newMode)); // Update redux state
+        await AsyncStorage.setItem("colorMode", JSON.stringify(newMode)); // Persist
+    };
+
     return (
-        <View style={{ padding: 20 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 10, gap: 20, marginBottom: 20 }}>
-                <TouchableOpacity onPress={() => navigation.goBack()} >
-                    <FontAwesome name="arrow-left" size={24} color="#000" />
+        <View style={[styles.container, darkMode && styles.containerDark]}>
+            <View style={styles.headerRow}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <FontAwesome
+                        name="arrow-left"
+                        size={24}
+                        color={darkMode ? "#fff" : "#000"}
+                    />
                 </TouchableOpacity>
-                <Text style={styles.header}>Settings</Text>
+                <Text style={[styles.header, darkMode && styles.headerDark]}>
+                    Settings
+                </Text>
             </View>
 
             <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-
-
                 {/* Preferences Card */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Preferences</Text>
+                <View style={[styles.card, darkMode && styles.cardDark]}>
+                    <Text style={[styles.cardTitle, darkMode && styles.cardTitleDark]}>
+                        Preferences
+                    </Text>
 
                     <View style={styles.optionRow}>
                         <View style={styles.optionLabel}>
-                            <Text style={styles.optionText}>Dark Mode</Text>
+                            <Text style={[styles.optionText, darkMode && styles.optionTextDark]}>
+                                Dark Mode
+                            </Text>
                         </View>
                         <Switch
                             trackColor={{ false: "#bbb", true: "#4cd137" }}
                             thumbColor={darkMode ? "#2ecc71" : "#fff"}
                             value={darkMode}
-                            onValueChange={setDarkMode}
+                            onValueChange={darkmodeSwitch}
                         />
                     </View>
 
                     <View style={styles.optionRow}>
                         <View style={styles.optionLabel}>
-                            <Text style={styles.optionText}>Enable Notifications</Text>
+                            <Text style={[styles.optionText, darkMode && styles.optionTextDark]}>
+                                Enable Notifications
+                            </Text>
                         </View>
                         <Switch
                             trackColor={{ false: "#bbb", true: "#4cd137" }}
@@ -75,8 +111,10 @@ export default function SettingsScreen() {
                 </View>
 
                 {/* Navigation Card */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>General</Text>
+                <View style={[styles.card, darkMode && styles.cardDark]}>
+                    <Text style={[styles.cardTitle, darkMode && styles.cardTitleDark]}>
+                        General
+                    </Text>
 
                     <TouchableOpacity
                         style={styles.optionRow}
@@ -84,7 +122,9 @@ export default function SettingsScreen() {
                         onPress={() => navigation.navigate("AboutScreen" as never)}
                     >
                         <View style={styles.optionLabel}>
-                            <Text style={styles.optionText}>About App</Text>
+                            <Text style={[styles.optionText, darkMode && styles.optionTextDark]}>
+                                About App
+                            </Text>
                         </View>
                     </TouchableOpacity>
 
@@ -94,7 +134,9 @@ export default function SettingsScreen() {
                         onPress={() => navigation.navigate("NotificationSettingsScreen" as never)}
                     >
                         <View style={styles.optionLabel}>
-                            <Text style={styles.optionText}>Notification Settings</Text>
+                            <Text style={[styles.optionText, darkMode && styles.optionTextDark]}>
+                                Notification Settings
+                            </Text>
                         </View>
                     </TouchableOpacity>
 
@@ -104,15 +146,25 @@ export default function SettingsScreen() {
                         onPress={handleResetData}
                     >
                         <View style={styles.optionLabel}>
-                            <Text style={[styles.optionText, { color: "#e74c3c" }]}>Reset All Data</Text>
+                            <Text
+                                style={[
+                                    styles.optionText,
+                                    { color: "#e74c3c" },
+                                    darkMode && { color: "#ff7675" },
+                                ]}
+                            >
+                                Reset All Data
+                            </Text>
                         </View>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
         </View>
-
     );
 }
+
+// ... keep your styles the same
+
 
 const styles = StyleSheet.create({
     container: {
@@ -121,11 +173,23 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 20,
     },
+    containerDark: {
+        backgroundColor: "#121212",
+    },
+    headerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingLeft: 10,
+        gap: 20,
+        marginBottom: 20,
+    },
     header: {
         fontSize: 32,
         fontWeight: "bold",
-
         color: "#333",
+    },
+    headerDark: {
+        color: "#eee",
     },
     card: {
         backgroundColor: "#fff",
@@ -139,11 +203,19 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 5 },
         elevation: 6,
     },
+    cardDark: {
+        backgroundColor: "#1e1e1e",
+        shadowOpacity: 0.5,
+        shadowColor: "#fff",
+    },
     cardTitle: {
         fontSize: 18,
         fontWeight: "600",
         marginBottom: 12,
         color: "#222",
+    },
+    cardTitleDark: {
+        color: "#ddd",
     },
     optionRow: {
         flexDirection: "row",
@@ -161,9 +233,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#333",
     },
-    icon: {
-        marginRight: 14,
+    optionTextDark: {
+        color: "#ccc",
     },
-
-
 });

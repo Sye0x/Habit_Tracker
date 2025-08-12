@@ -10,7 +10,7 @@ import CalorieCounterScreen from './components/DashBoardItems/DietComponents/Cal
 import SettingsScreen from './components/DashBoardItems/ProfileComponents/Settings';
 import NotificationSettingsScreen from './components/DashBoardItems/ProfileComponents/NotificationSettingsScreen';
 import AboutScreen from './components/DashBoardItems/ProfileComponents/AboutScreen';
-
+import { ThemeProvider } from './ThemeContext';
 
 export type RootStackParamList = {
   GetStarted: undefined;
@@ -29,6 +29,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 function App() {
   return (
+
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Dashboard">
         <Stack.Screen name="GetStarted" component={GetStarted} options={{ headerShown: false }} />

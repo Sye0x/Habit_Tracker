@@ -1,5 +1,5 @@
 import FontAwesome from "@react-native-vector-icons/fontawesome";
-import React from "react";
+import React, { useEffect } from "react";
 import {
     View,
     Text,
@@ -7,6 +7,10 @@ import {
     ScrollView,
     TouchableOpacity,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch, useSelector } from "react-redux";
+import { toggletheme } from "../../redux/action"; // adjust path if needed
+import type { RootState } from "../../redux/rootReducer"; // adjust path
 
 type MealPlan = {
     calories: number;
@@ -103,66 +107,100 @@ const dietDetails: Record<string, MealPlan> = {
     },
 };
 
+const planColors: Record<string, { light: string; dark: string }> = {
+    "Calisthenics Plan 🤸": { light: "#f9fbe7", dark: "#37471f" },
+    "Muscle Building Plan 💪": { light: "#ffaac6ff", dark: "#6a1b27" },
+    "Office Workers Plan 💼": { light: "#b8e2feff", dark: "#223366" },
+};
 
 type DietDetailProps = {
     route: { params: { DietPlanName: string } };
     navigation: any;
 };
 
-// Pastel colors matching the DietListScreen
-const planColors: Record<string, string> = {
-    "Calisthenics Plan 🤸": "#f9fbe7",
-    "Muscle Building Plan 💪": "#ffaac6ff",
-    "Office Workers Plan 💼": "#b8e2feff",
-};
-
 export default function DietDetailScreen({ route, navigation }: DietDetailProps) {
+    const dispatch = useDispatch();
+    const darkMode = useSelector((state: RootState) => state.theme);
+
+    useEffect(() => {
+        (async () => {
+            const savedTheme = await AsyncStorage.getItem("colorMode");
+            if (savedTheme !== null) {
+                const parsedTheme = JSON.parse(savedTheme);
+                if (parsedTheme !== darkMode) {
+                    dispatch(toggletheme(parsedTheme));
+                }
+            }
+        })();
+    }, []);
+
     const { DietPlanName } = route.params;
     const plan = dietDetails[DietPlanName];
 
     if (!plan) {
         return (
-            <View style={styles.screen}>
-                <Text style={styles.errorText}>Plan not found.</Text>
+            <View style={[styles.screen, darkMode && styles.screenDark]}>
+                <Text style={[styles.errorText, darkMode && styles.errorTextDark]}>
+                    Plan not found.
+                </Text>
             </View>
         );
     }
 
-    const mealIcons: Record<keyof MealPlan["meals"], "coffee" | "cutlery" | "spoon" | "apple"> = {
+    const mealIcons: Record<
+        keyof MealPlan["meals"],
+        "coffee" | "cutlery" | "spoon" | "apple"
+    > = {
         Breakfast: "coffee",
         Lunch: "cutlery",
         Dinner: "spoon",
         Snacks: "apple",
     };
 
-    const themeColor = planColors[DietPlanName] || "#f8fafc";
+    const themeColor =
+        planColors[DietPlanName]?.[darkMode ? "dark" : "light"] || (darkMode ? "#121212" : "#f8fafc");
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, darkMode && styles.screenDark]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: themeColor }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <FontAwesome name="arrow-left" size={22} color="#333" />
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={[styles.backButton, darkMode && styles.backButtonDark]}
+                >
+                    <FontAwesome name="arrow-left" size={22} color={darkMode ? "#eee" : "#333"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{DietPlanName}</Text>
+                <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]} numberOfLines={1}>
+                    {DietPlanName}
+                </Text>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 16 }}>
                 {/* Calories & Description */}
                 <View style={[styles.infoCard, { backgroundColor: themeColor }]}>
-                    <Text style={styles.calories}>🔥 {plan.calories} Calories</Text>
-                    <Text style={styles.description}>{plan.description}</Text>
+                    <Text style={[styles.calories, darkMode && styles.caloriesDark]}>
+                        🔥 {plan.calories} Calories
+                    </Text>
+                    <Text style={[styles.description, darkMode && styles.descriptionDark]}>
+                        {plan.description}
+                    </Text>
                 </View>
 
                 {/* Meals */}
                 {Object.entries(plan.meals).map(([mealType, items]) => (
                     <View key={mealType} style={[styles.mealCard, { backgroundColor: themeColor }]}>
                         <View style={styles.mealHeader}>
-                            <FontAwesome name={mealIcons[mealType as keyof typeof mealIcons]} size={18} color="#333" />
-                            <Text style={styles.mealTitle}>{mealType}</Text>
+                            <FontAwesome
+                                name={mealIcons[mealType as keyof typeof mealIcons]}
+                                size={18}
+                                color={darkMode ? "#eee" : "#333"}
+                            />
+                            <Text style={[styles.mealTitle, darkMode && styles.mealTitleDark]}>{mealType}</Text>
                         </View>
                         {items.map((item, index) => (
-                            <Text key={index} style={styles.mealItem}>• {item}</Text>
+                            <Text key={index} style={[styles.mealItem, darkMode && styles.mealItemDark]}>
+                                • {item}
+                            </Text>
                         ))}
                     </View>
                 ))}
@@ -173,6 +211,7 @@ export default function DietDetailScreen({ route, navigation }: DietDetailProps)
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: "#f0f4f8" },
+    screenDark: { backgroundColor: "#121212" },
 
     header: {
         flexDirection: "row",
@@ -189,7 +228,18 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginRight: 12,
     },
-    headerTitle: { fontSize: 20, fontWeight: "bold", color: "#333", flexShrink: 1 },
+    backButtonDark: {
+        backgroundColor: "rgba(255,255,255,0.15)",
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        color: "#333",
+        flexShrink: 1,
+    },
+    headerTitleDark: {
+        color: "#eee",
+    },
 
     infoCard: {
         padding: 16,
@@ -197,8 +247,22 @@ const styles = StyleSheet.create({
         elevation: 2,
         marginBottom: 16,
     },
-    calories: { fontSize: 18, fontWeight: "bold", marginBottom: 6, color: "#E53935" },
-    description: { fontSize: 14, color: "#333" },
+    calories: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: 6,
+        color: "#E53935",
+    },
+    caloriesDark: {
+        color: "#ff7f7f",
+    },
+    description: {
+        fontSize: 14,
+        color: "#333",
+    },
+    descriptionDark: {
+        color: "#ccc",
+    },
 
     mealCard: {
         padding: 14,
@@ -206,9 +270,36 @@ const styles = StyleSheet.create({
         elevation: 1,
         marginBottom: 14,
     },
-    mealHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-    mealTitle: { fontSize: 18, fontWeight: "bold", marginLeft: 8, color: "#333" },
-    mealItem: { fontSize: 14, marginLeft: 8, color: "#444" },
+    mealHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+    mealTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginLeft: 8,
+        color: "#333",
+    },
+    mealTitleDark: {
+        color: "#eee",
+    },
+    mealItem: {
+        fontSize: 14,
+        marginLeft: 8,
+        color: "#444",
+    },
+    mealItemDark: {
+        color: "#ddd",
+    },
 
-    errorText: { fontSize: 16, textAlign: "center", marginTop: 50 },
+    errorText: {
+        fontSize: 16,
+        textAlign: "center",
+        marginTop: 50,
+        color: "#333",
+    },
+    errorTextDark: {
+        color: "#eee",
+    },
 });

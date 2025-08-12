@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
     View,
     Text,
@@ -9,6 +9,10 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+
+import { useDispatch, useSelector } from "react-redux";
+import { toggletheme } from "../../redux/action"; // adjust path as needed
+import type { RootState } from "../../redux/rootReducer"; // adjust path as needed
 
 const STORAGE_KEY = "@calorie_counter_data_array";
 
@@ -22,14 +26,28 @@ type CalorieEntry = {
 };
 
 export default function DietHistory() {
+    const dispatch = useDispatch();
+    const darkMode = useSelector((state: RootState) => state.theme);
+
     const [history, setHistory] = useState<CalorieEntry[]>([]);
+
+    useEffect(() => {
+        (async () => {
+            const savedTheme = await AsyncStorage.getItem("colorMode");
+            if (savedTheme !== null) {
+                const parsedTheme = JSON.parse(savedTheme);
+                if (parsedTheme !== darkMode) {
+                    dispatch(toggletheme(parsedTheme));
+                }
+            }
+        })();
+    }, []);
 
     const loadHistory = async () => {
         try {
             const stored = await AsyncStorage.getItem(STORAGE_KEY);
             if (stored) {
                 const dataArray: CalorieEntry[] = JSON.parse(stored);
-                // Sort by date descending
                 dataArray.sort((a, b) => (b.date > a.date ? 1 : -1));
                 setHistory(dataArray);
             } else {
@@ -41,21 +59,17 @@ export default function DietHistory() {
     };
 
     const clearHistory = async () => {
-        Alert.alert(
-            "Clear History",
-            "Are you sure you want to delete all history?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Yes",
-                    style: "destructive",
-                    onPress: async () => {
-                        await AsyncStorage.removeItem(STORAGE_KEY);
-                        setHistory([]);
-                    },
+        Alert.alert("Clear History", "Are you sure you want to delete all history?", [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Yes",
+                style: "destructive",
+                onPress: async () => {
+                    await AsyncStorage.removeItem(STORAGE_KEY);
+                    setHistory([]);
                 },
-            ]
-        );
+            },
+        ]);
     };
 
     const formatDate = (dateString: string) => {
@@ -68,10 +82,7 @@ export default function DietHistory() {
     };
 
     const averageCalories = history.length
-        ? Math.round(
-            history.reduce((sum, entry) => sum + entry.totalCalories, 0) /
-            history.length
-        )
+        ? Math.round(history.reduce((sum, entry) => sum + entry.totalCalories, 0) / history.length)
         : 0;
 
     useFocusEffect(
@@ -82,9 +93,9 @@ export default function DietHistory() {
 
     if (history.length === 0) {
         return (
-            <View style={styles.container}>
-                <Text style={styles.heading}>History</Text>
-                <Text style={styles.noDataText}>
+            <View style={[styles.container, darkMode && styles.containerDark]}>
+                <Text style={[styles.heading, darkMode && styles.headingDark]}>History</Text>
+                <Text style={[styles.noDataText, darkMode && styles.noDataTextDark]}>
                     No history yet. Start tracking to see your progress! 📊
                 </Text>
             </View>
@@ -92,38 +103,50 @@ export default function DietHistory() {
     }
 
     return (
-        <View style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.heading}>History</Text>
+        <View style={[{ flex: 1 }, darkMode && { backgroundColor: "#121212" }]}>
+            <ScrollView contentContainerStyle={[styles.container, darkMode && styles.containerDark]}>
+                <Text style={[styles.heading, darkMode && styles.headingDark]}>History</Text>
 
-                {/* Average Calories */}
-                <Text style={styles.avgText}>
+                <Text style={[styles.avgText, darkMode && styles.avgTextDark]}>
                     Average Calories: {averageCalories} kcal/day
                 </Text>
 
-                {/* History List */}
                 {history.map((entry) => (
-                    <View key={entry.date} style={styles.entryBox}>
-                        <Text style={styles.dateText}>{formatDate(entry.date)}</Text>
+                    <View key={entry.date} style={[styles.entryBox, darkMode && styles.entryBoxDark]}>
+                        <Text style={[styles.dateText, darkMode && styles.dateTextDark]}>{formatDate(entry.date)}</Text>
                         <View style={styles.row}>
-                            <Text style={styles.label}>Breakfast:</Text>
-                            <Text style={styles.value}>{entry.breakfast} kcal</Text>
+                            <Text style={[styles.label, darkMode && styles.labelDark]}>Breakfast:</Text>
+                            <Text style={[styles.value, darkMode && styles.valueDark]}>{entry.breakfast} kcal</Text>
                         </View>
                         <View style={styles.row}>
-                            <Text style={styles.label}>Lunch:</Text>
-                            <Text style={styles.value}>{entry.lunch} kcal</Text>
+                            <Text style={[styles.label, darkMode && styles.labelDark]}>Lunch:</Text>
+                            <Text style={[styles.value, darkMode && styles.valueDark]}>{entry.lunch} kcal</Text>
                         </View>
                         <View style={styles.row}>
-                            <Text style={styles.label}>Dinner:</Text>
-                            <Text style={styles.value}>{entry.dinner} kcal</Text>
+                            <Text style={[styles.label, darkMode && styles.labelDark]}>Dinner:</Text>
+                            <Text style={[styles.value, darkMode && styles.valueDark]}>{entry.dinner} kcal</Text>
                         </View>
                         <View style={styles.row}>
-                            <Text style={styles.label}>Snacks:</Text>
-                            <Text style={styles.value}>{entry.snacks} kcal</Text>
+                            <Text style={[styles.label, darkMode && styles.labelDark]}>Snacks:</Text>
+                            <Text style={[styles.value, darkMode && styles.valueDark]}>{entry.snacks} kcal</Text>
                         </View>
                         <View style={[styles.row, styles.totalRow]}>
-                            <Text style={[styles.label, styles.totalLabel]}>Total:</Text>
-                            <Text style={[styles.value, styles.totalValue]}>
+                            <Text
+                                style={[
+                                    styles.label,
+                                    styles.totalLabel,
+                                    darkMode && styles.totalLabelDark,
+                                ]}
+                            >
+                                Total:
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.value,
+                                    styles.totalValue,
+                                    darkMode && styles.totalValueDark,
+                                ]}
+                            >
                                 {entry.totalCalories} kcal
                             </Text>
                         </View>
@@ -131,8 +154,10 @@ export default function DietHistory() {
                 ))}
             </ScrollView>
 
-            {/* Floating Clear History Button */}
-            <TouchableOpacity style={styles.floatingButton} onPress={clearHistory}>
+            <TouchableOpacity
+                style={[styles.floatingButton, darkMode && styles.floatingButtonDark]}
+                onPress={clearHistory}
+            >
                 <Text style={styles.floatingButtonText}>🗑</Text>
             </TouchableOpacity>
         </View>
@@ -146,6 +171,9 @@ const styles = StyleSheet.create({
         backgroundColor: "#f0f4f8",
         minHeight: "100%",
     },
+    containerDark: {
+        backgroundColor: "#121212",
+    },
     heading: {
         fontSize: 32,
         fontWeight: "bold",
@@ -153,11 +181,17 @@ const styles = StyleSheet.create({
         marginVertical: 15,
         color: "#2d3436",
     },
+    headingDark: {
+        color: "#eeeeee",
+    },
     noDataText: {
         fontSize: 18,
         textAlign: "center",
         marginTop: 40,
         color: "#636e72",
+    },
+    noDataTextDark: {
+        color: "#bbbbbb",
     },
     avgText: {
         fontSize: 16,
@@ -165,6 +199,9 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 10,
         color: "#6c5ce7",
+    },
+    avgTextDark: {
+        color: "#a29bfe",
     },
     entryBox: {
         backgroundColor: "white",
@@ -176,12 +213,21 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 5,
     },
+    entryBoxDark: {
+        backgroundColor: "#1e1e1e",
+        shadowColor: "#000",
+        shadowOpacity: 0.7,
+        shadowRadius: 8,
+    },
     dateText: {
         fontWeight: "700",
         fontSize: 16,
         marginBottom: 10,
         color: "#0984e3",
         textAlign: "center",
+    },
+    dateTextDark: {
+        color: "#74b9ff",
     },
     row: {
         flexDirection: "row",
@@ -193,10 +239,16 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#2d3436",
     },
+    labelDark: {
+        color: "#dfe6e9",
+    },
     value: {
         fontSize: 15,
         fontWeight: "700",
         color: "#2d3436",
+    },
+    valueDark: {
+        color: "#dfe6e9",
     },
     totalRow: {
         borderTopWidth: 1,
@@ -208,9 +260,15 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#0984e3",
     },
+    totalLabelDark: {
+        color: "#74b9ff",
+    },
     totalValue: {
         fontSize: 16,
         color: "#0984e3",
+    },
+    totalValueDark: {
+        color: "#74b9ff",
     },
     floatingButton: {
         position: "absolute",
@@ -223,6 +281,9 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         elevation: 4,
+    },
+    floatingButtonDark: {
+        backgroundColor: "#e17055",
     },
     floatingButtonText: {
         color: "white",
