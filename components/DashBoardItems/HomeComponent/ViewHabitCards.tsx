@@ -97,15 +97,20 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
                                         { marginTop: index === 0 ? 0 : -143, zIndex: index }
                                     ]}
                                 >
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Text style={[styles.cardTitle, themeStyles.cardTitle]}>{item.title}</Text>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, }}>
+                                            <Text style={[styles.cardTitle, themeStyles.cardTitle]}>{item.title}</Text>
+                                            <Text style={{ fontWeight: "bold", color: isDarkMode ? "#fff" : "#000" }}>({item.frequency})</Text>
+                                        </View>
+
                                         <Pressable
                                             onPress={() => handleDeleteCard(originalIndex)}
                                             style={{
                                                 backgroundColor: "rgba(255, 76, 76, 1)",
-                                                height: 30, width: 30,
+                                                height: 28, width: 28,
                                                 justifyContent: "center", alignItems: "center",
-                                                borderRadius: 15
+                                                borderRadius: 15,
+
                                             }}>
                                             <FontAwesome name="trash" size={20} color="#fff" />
                                         </Pressable>
@@ -120,9 +125,7 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
                                     <Text style={[{ fontSize: 14, marginTop: 4 }, themeStyles.cardSubtitle]}>
                                         Habit Type: {item.habitType}
                                     </Text>
-                                    <Text style={[{ fontSize: 14, marginTop: 4 }, themeStyles.cardSubtitle]}>
-                                        Frequency: {item.frequency}
-                                    </Text>
+
                                     <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 20 }}>
                                         <Text style={{ fontSize: 12, color: isDarkMode ? '#999' : '#555' }}>Tap to view</Text>
                                     </View>
@@ -139,7 +142,7 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
                         style={[
                             styles.modalContent,
                             { backgroundColor: isDarkMode ? '#222' : selectedCard.backgroundColor },
-                            isDarkMode && darkStyles.modalContentShadow
+                            isDarkMode && darkStyles.modalContent
                         ]}
                     >
                         <Text style={[styles.modalTitle, themeStyles.modalTitle]}>{selectedCard.title}</Text>
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
     Card: {
         borderRadius: 20,
         elevation: 8,
-        height: 220,
+        height: 200,
         paddingVertical: 20,
         paddingHorizontal: 18,
     },
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
     modalClose: {
         fontSize: 16, backgroundColor: '#fc5a5a', color: '#fff', fontWeight: 'bold',
         paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, textAlign: 'center',
-        borderWidth: 1, borderColor: "#000",
+
     },
     modalCloseText: {
         color: '#fff',
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
     startTimerButton: {
         fontSize: 16, backgroundColor: '#58d03d', color: '#fff', fontWeight: 'bold',
         paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, textAlign: 'center',
-        borderWidth: 1, borderColor: "#000",
+
     },
     startTimerButtonText: {
         color: '#fff',
@@ -245,51 +248,65 @@ const lightStyles = StyleSheet.create({
 
 const darkStyles = StyleSheet.create({
     container: { backgroundColor: "#121212" },
-    cardTitle: { color: "#fff" },
-    cardSubtitle: { color: "#ccc" },
-    modalTitle: { color: "#fff" },
-    modalDescription: { color: "#ddd" },
+
+    cardTitle: { color: "#e0e0e0" }, // softer white
+    cardSubtitle: { color: "#bbbbbb" }, // lighter gray for subtitles
+
     Card: {
-        backgroundColor: "#1E1E1E",
+        backgroundColor: "#292929",   // deeper dark gray base
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: "#333",
-        elevation: 5,
-        shadowColor: "#ffffff22",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
+        borderColor: "#444",          // softer border
+        elevation: 6,
+        shadowColor: "#000000AA",     // stronger shadow
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.6,
+        shadowRadius: 8,
         paddingVertical: 20,
         paddingHorizontal: 18,
     },
-    modalContentShadow: {
-        shadowColor: "#ffffff44",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
+
+    modalTitle: { color: "#f0f0f0" },
+    modalDescription: { color: "#ccc" },
+
+    modalContent: {
+        backgroundColor: "#1a1a1a", // very dark background for modal
+        width: '90%', maxWidth: 350,
+        borderRadius: 20,
+        padding: 20,
         elevation: 20,
+        shadowColor: "#00ffccaa", // subtle teal glow
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.7,
+        shadowRadius: 16,
     },
+
     modalButtonClose: {
-        backgroundColor: "#ff5555",
+        backgroundColor: "#e74c3c", // vibrant red
         borderWidth: 0,
-        shadowColor: "#ff5555",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.7,
-        shadowRadius: 8,
+        shadowColor: "#e74c3c",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
     },
+
     modalButtonStart: {
-        backgroundColor: "#57d13c",
+        backgroundColor: "#27ae60", // rich green
         borderWidth: 0,
-        shadowColor: "#57d13c",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.7,
-        shadowRadius: 8,
+        shadowColor: "#27ae60",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
     },
+
     modalButtonText: {
         color: "#fff",
-        fontWeight: "bold",
+        fontWeight: "700",
         fontSize: 16,
         textAlign: "center",
+        textShadowColor: "#0009",
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
 });
 

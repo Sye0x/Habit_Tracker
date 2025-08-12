@@ -195,7 +195,6 @@ const styles = StyleSheet.create({
     },
     avgText: {
         fontSize: 16,
-        fontWeight: "600",
         textAlign: "center",
         marginBottom: 10,
         color: "#6c5ce7",

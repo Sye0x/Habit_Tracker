@@ -90,7 +90,7 @@ function DayandGreeting() {
     }, [week]);
 
     return (
-        <View style={[{ backgroundColor: isDark ? "#000" : "#f0f4f8" }]}>
+        <View style={[{ backgroundColor: isDark ? "#121212" : "#f0f4f8" }]}>
             <Text style={[styles.greeting, { color: isDark ? "#fff" : "#000" }]}>
                 Good Morning {name}
             </Text>
