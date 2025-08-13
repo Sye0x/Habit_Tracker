@@ -1,16 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-    StyleSheet,
-    View,
-    ImageBackground,
-    Text,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    Modal,
-    TextInput,
-    Alert,
-} from 'react-native';
+import { StyleSheet, View, ImageBackground, Text, TouchableOpacity, Image, ScrollView, Modal, TextInput, Alert, } from 'react-native';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -103,7 +92,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
             ...editProfile,
             lastUpdated: new Date().toLocaleDateString()
         };
-        setProfile(updatedProfile);
+        setProfile(updatedProfile); // ✅ Now profile updates only when saved
         setEditVisible(false);
 
         try {
@@ -116,7 +105,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
             await AsyncStorage.setItem('lastUpdated', updatedProfile.lastUpdated);
 
             if (updatedProfile.photoUri) {
-                await AsyncStorage.setItem('photoUri', updatedProfile.photoUri);
+                await AsyncStorage.setItem('photoUri', updatedProfile.photoUri); // ✅ Save here
             } else {
                 await AsyncStorage.removeItem('photoUri');
             }
@@ -125,13 +114,14 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
         }
     };
 
+
     const pickImage = () => {
         launchImageLibrary(
             {
                 mediaType: 'photo',
                 quality: 0.7,
             },
-            async (response) => {
+            (response) => {
                 if (response.didCancel) {
                     // user cancelled
                 } else if (response.errorCode) {
@@ -139,18 +129,14 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                 } else if (response.assets && response.assets.length > 0) {
                     const uri = response.assets[0].uri;
                     if (uri) {
+                        // ✅ Only update editProfile here
                         setEditProfile(prev => ({ ...prev, photoUri: uri }));
-                        setProfile(prev => ({ ...prev, photoUri: uri }));
-                        try {
-                            await AsyncStorage.setItem('photoUri', uri);
-                        } catch (error) {
-                            console.error('Failed to save photoUri:', error);
-                        }
                     }
                 }
             }
         );
     };
+
 
     return (
         <View style={styles.container}>
@@ -160,7 +146,13 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                 imageStyle={{ borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }}
             >
                 <View style={{ flexDirection: "row", padding: 10, justifyContent: "space-between", alignItems: 'center' }}>
-                    <TouchableOpacity style={styles.optionsButton} onPress={() => setEditVisible(true)}>
+                    <TouchableOpacity
+                        style={styles.optionsButton}
+                        onPress={() => {
+                            setEditProfile(profile); // ✅ reset to saved values
+                            setEditVisible(true);
+                        }}
+                    >
                         <FontAwesome name="pencil" color="#fff" size={24} />
                     </TouchableOpacity>
 
