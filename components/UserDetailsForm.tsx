@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, Modal, FlatList, ScrollView } from 'react-native';
 import { RadioButton, Snackbar } from 'react-native-paper';
+import { ActivityIndicator } from "react-native";
+
 
 function UserDetailsForm() {
     const [name, setName] = useState("");
