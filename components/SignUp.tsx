@@ -1,19 +1,25 @@
-import React, { useState } from "react";
-import { View, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
+import { toggletheme } from "./redux/action";
+import type { RootState } from "./redux/rootReducer";
+import { useDispatch, useSelector } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import auth from "@react-native-firebase/auth";
 
 const lightTheme = {
     background: "#f2f8ff",
     containerBackground: "#ffffff",
     text: "#111",
-    headingtext: "#abd1a3ff",   // updated
+    headingtext: "#abd1a3ff",
     border: "#b7b7b7ff",
-    borderFocused: "#ffb888ff", // updated
+    borderFocused: "#ffb888ff",
     placeholder: "#777",
-    addButton: "#abd1a3ff",     // updated
+    addButton: "#abd1a3ff",
     addButtonText: "#fff",
-    iconColor: "#ffb888ff"
+    iconColor: "#ffb888ff",
+    error: "#ff4d4d",
 };
 
 const darkTheme = {
@@ -26,81 +32,84 @@ const darkTheme = {
     placeholder: "#888",
     addButton: "#4f5bd5",
     addButtonText: "#fff",
-    iconColor: "#fff"
+    iconColor: "#fff",
+    error: "#ff4d4d",
 };
 
 export default function SignUp({ navigation }: any) {
-    const [thememode, setTheme] = useState<boolean>(true);
     const [username, setUsername] = useState<string>("");
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [confirmPassword, setConfirmPassword] = useState<string>("");
-    const [focused, setFocused] = useState<string | null>(null); // track which input is focused
+    const [focused, setFocused] = useState<string | null>(null);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    // Add two new states at the top
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
-    const theme = thememode ? lightTheme : darkTheme;
 
-    const toggleTheme = () => {
-        setTheme(!thememode);
+    const dispatch = useDispatch();
+    const darkMode = useSelector((state: RootState) => state.theme);
+    const theme = darkMode ? darkTheme : lightTheme;
+
+    const toggleTheme = async () => {
+        const newMode = !darkMode;
+        dispatch(toggletheme(newMode));
+        await AsyncStorage.setItem("colorMode", JSON.stringify(newMode));
+    };
+
+    useEffect(() => {
+        (async () => {
+            const savedTheme = await AsyncStorage.getItem("colorMode");
+            if (savedTheme !== null) {
+                const parsed = JSON.parse(savedTheme);
+                if (parsed !== darkMode) {
+                    dispatch(toggletheme(parsed));
+                }
+            }
+        })();
+    }, []);
+
+    const validate = () => {
+        const newErrors: { [key: string]: string } = {};
+        if (!username) newErrors.username = "Username is required";
+        if (!email) newErrors.email = "Email is required";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Invalid email format";
+        if (!password) newErrors.password = "Password is required";
+        else if (password.length < 6) newErrors.password = "Password must be at least 6 characters";
+        if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match";
+        return newErrors;
     };
 
     const handleSignUp = () => {
-        if (password !== confirmPassword) {
+        const validationErrors = validate();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
             return;
         }
-        console.log("Sign Up Data:", { username, email, password });
+
+        auth()
+            .createUserWithEmailAndPassword(email, password)
+            .then(() => {
+                setUsername("");
+                setPassword("");
+                setConfirmPassword("");
+                setEmail("");
+                setErrors({});
+                Alert.alert("Sign Up Successfully");
+                navigation.navigate("LogIn");
+            })
+            .catch((err) => {
+                setErrors({ general: err.message });
+            });
     };
-
-
-
-    type InputProps = {
-        placeholder: string;
-        value: string;
-        onChangeText: (text: string) => void;
-        secureTextEntry?: boolean;
-        theme: typeof lightTheme | typeof darkTheme;
-        focused: string | null;
-        setFocused: (field: string | null) => void;
-        fieldName: string;
-    };
-
-    const CustomInput: React.FC<InputProps> = ({
-        placeholder,
-        value,
-        onChangeText,
-        secureTextEntry = false,
-        theme,
-        focused,
-        setFocused,
-        fieldName
-    }) => {
-        return (
-            <TextInput
-                style={[
-                    Styles.input,
-                    {
-                        borderColor: focused === fieldName ? theme.borderFocused : theme.border,
-                        color: theme.text,
-                        backgroundColor: theme.background,
-                    },
-                ]}
-                placeholder={placeholder}
-                placeholderTextColor={theme.placeholder}
-                secureTextEntry={secureTextEntry}
-                value={value}
-                onChangeText={onChangeText}
-                onFocus={() => setFocused(fieldName)}
-                onBlur={() => setFocused(null)}
-            />
-        );
-    };
-
 
     return (
         <View style={[Styles.Screen, { backgroundColor: theme.background, alignItems: "center" }]}>
             {/* Theme Toggle */}
             <View style={{ alignItems: "flex-end", margin: hp(3), width: wp(90) }}>
                 <TouchableOpacity onPress={toggleTheme}>
-                    <FontAwesome name={thememode ? "sun-o" : "moon-o"} size={40} color={theme.iconColor} />
+                    <FontAwesome name={darkMode ? "moon-o" : "sun-o"} size={40} color={theme.iconColor} />
                 </TouchableOpacity>
             </View>
 
@@ -108,52 +117,139 @@ export default function SignUp({ navigation }: any) {
             <View style={[Styles.SignUpContainer, { backgroundColor: theme.containerBackground }]}>
                 <Text style={[Styles.headingText, { color: theme.headingtext }]}>Sign Up</Text>
 
+                {/* General Error */}
+                {errors.general && (
+                    <Text style={[Styles.errorText, { textAlign: "center", marginBottom: 15 }]}>
+                        {errors.general}
+                    </Text>
+                )}
+
                 {/* Username */}
-                <CustomInput
-                    placeholder="Username"
-                    value={username}
-                    onChangeText={setUsername}
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="username"
-                />
+                <View style={Styles.inputWrapper}>
+                    <FontAwesome name="user" size={22} color={theme.iconColor} style={Styles.inputIcon} />
+                    <TextInput
+                        style={[
+                            Styles.input,
+                            {
+                                borderColor: errors.username
+                                    ? theme.error
+                                    : focused === "username"
+                                        ? theme.borderFocused
+                                        : theme.border,
+                                color: theme.text,
+                                backgroundColor: theme.background,
+                            },
+                        ]}
+                        placeholder="Username"
+                        placeholderTextColor={theme.placeholder}
+                        value={username}
+                        onChangeText={setUsername}
+                        onFocus={() => setFocused("username")}
+                        onBlur={() => setFocused(null)}
+                    />
+                </View>
+                {errors.username && <Text style={Styles.errorText}>{errors.username}</Text>}
 
                 {/* Email */}
-                <CustomInput
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="email"
-                />
+                <View style={Styles.inputWrapper}>
+                    <FontAwesome name="envelope" size={20} color={theme.iconColor} style={Styles.inputIcon} />
+                    <TextInput
+                        style={[
+                            Styles.input,
+                            {
+                                borderColor: errors.email
+                                    ? theme.error
+                                    : focused === "email"
+                                        ? theme.borderFocused
+                                        : theme.border,
+                                color: theme.text,
+                                backgroundColor: theme.background,
+                            },
+                        ]}
+                        placeholder="Email"
+                        placeholderTextColor={theme.placeholder}
+                        value={email}
+                        onChangeText={setEmail}
+                        onFocus={() => setFocused("email")}
+                        onBlur={() => setFocused(null)}
+                    />
+                </View>
+                {errors.email && <Text style={Styles.errorText}>{errors.email}</Text>}
 
                 {/* Password */}
-                <CustomInput
-                    placeholder="Password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="password"
-                />
+                {/* Password */}
+                <View style={Styles.inputWrapper}>
+                    <FontAwesome name="lock" size={24} color={theme.iconColor} style={Styles.inputIcon} />
+                    <TextInput
+                        style={[
+                            Styles.input,
+                            {
+                                borderColor: errors.password
+                                    ? theme.error
+                                    : focused === "password"
+                                        ? theme.borderFocused
+                                        : theme.border,
+                                color: theme.text,
+                                backgroundColor: theme.background,
+                            },
+                        ]}
+                        placeholder="Password"
+                        placeholderTextColor={theme.placeholder}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        onFocus={() => setFocused("password")}
+                        onBlur={() => setFocused(null)}
+                    />
+                    <TouchableOpacity
+                        style={Styles.eyeIcon}
+                        onPress={() => setShowPassword(!showPassword)}
+                    >
+                        <FontAwesome
+                            name={showPassword ? "eye" : "eye-slash"}
+                            size={20}
+                            color={theme.iconColor}
+                        />
+                    </TouchableOpacity>
+                </View>
+                {errors.password && <Text style={Styles.errorText}>{errors.password}</Text>}
 
                 {/* Confirm Password */}
-                <CustomInput
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="confirmPassword"
-                />
-
+                <View style={Styles.inputWrapper}>
+                    <FontAwesome name="lock" size={24} color={theme.iconColor} style={Styles.inputIcon} />
+                    <TextInput
+                        style={[
+                            Styles.input,
+                            {
+                                borderColor: errors.confirmPassword
+                                    ? theme.error
+                                    : focused === "confirmPassword"
+                                        ? theme.borderFocused
+                                        : theme.border,
+                                color: theme.text,
+                                backgroundColor: theme.background,
+                            },
+                        ]}
+                        placeholder="Confirm Password"
+                        placeholderTextColor={theme.placeholder}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry={!showConfirmPassword}
+                        onFocus={() => setFocused("confirmPassword")}
+                        onBlur={() => setFocused(null)}
+                    />
+                    <TouchableOpacity
+                        style={Styles.eyeIcon}
+                        onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                        <FontAwesome
+                            name={showConfirmPassword ? "eye" : "eye-slash"}
+                            size={20}
+                            color={theme.iconColor}
+                        />
+                    </TouchableOpacity>
+                </View>
+                {errors.confirmPassword && <Text style={Styles.errorText}>{errors.confirmPassword}</Text>}
 
                 {/* Sign Up Button */}
                 <TouchableOpacity style={[Styles.signUpButton, { backgroundColor: theme.addButton }]} onPress={handleSignUp}>
@@ -178,6 +274,7 @@ const Styles = StyleSheet.create({
     },
     SignUpContainer: {
         width: wp(90),
+        height: hp(80),
         borderRadius: 20,
         padding: 20,
         justifyContent: "center",
@@ -193,15 +290,23 @@ const Styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 30,
     },
+    inputWrapper: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    inputIcon: {
+        position: "absolute",
+        left: 15,
+        zIndex: 1,
+    },
     input: {
-        width: "100%",
+        flex: 1,
         height: 55,
         borderWidth: 2.5,
         borderRadius: 12,
-        paddingHorizontal: 15,
+        paddingHorizontal: 45, // leave space for icon
         fontSize: 18,
-        marginBottom: 20,
-        backgroundColor: "#f9f9f9",
     },
     signUpButton: {
         marginTop: 10,
@@ -221,5 +326,16 @@ const Styles = StyleSheet.create({
     loginLink: {
         fontSize: 16,
         fontWeight: "600",
+    },
+    errorText: {
+        color: "#ff4d4d",
+        fontSize: 14,
+        marginBottom: 10,
+        marginLeft: 5,
+    },
+    eyeIcon: {
+        position: "absolute",
+        right: 15,
+        padding: 5,
     },
 });

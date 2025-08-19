@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
+import { useSelector, useDispatch } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { toggletheme } from "./redux/action";
+import type { RootState } from "./redux/rootReducer";
+import auth from "@react-native-firebase/auth";
 
 const lightTheme = {
     background: "#f2f8ff",
@@ -30,111 +35,123 @@ const darkTheme = {
 };
 
 export default function Login({ navigation }: any) {
-    const [thememode, setTheme] = useState<boolean>(true);
-    const [email, setEmail] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [focused, setFocused] = useState<string | null>(null);
 
-    const theme = thememode ? lightTheme : darkTheme;
+    const dispatch = useDispatch();
+    const darkMode = useSelector((state: RootState) => state.theme);
+    const theme = darkMode ? darkTheme : lightTheme;
 
-    const toggleTheme = () => {
-        setTheme(!thememode);
+    const toggleTheme = async () => {
+        const newMode = !darkMode;
+        dispatch(toggletheme(newMode));
+        await AsyncStorage.setItem("colorMode", JSON.stringify(newMode));
     };
+
+    useEffect(() => {
+        (async () => {
+            const savedTheme = await AsyncStorage.getItem("colorMode");
+            if (savedTheme !== null) {
+                const parsed = JSON.parse(savedTheme);
+                if (parsed !== darkMode) {
+                    dispatch(toggletheme(parsed));
+                }
+            }
+        })();
+    }, []);
 
     const handleLogin = () => {
         console.log("Login Data:", { email, password });
-    };
-
-
-
-    type InputProps = {
-        placeholder: string;
-        value: string;
-        onChangeText: (text: string) => void;
-        secureTextEntry?: boolean;
-        theme: typeof lightTheme | typeof darkTheme;
-        focused: string | null;
-        setFocused: (field: string | null) => void;
-        fieldName: string;
-    };
-
-    const CustomInput: React.FC<InputProps> = ({
-        placeholder,
-        value,
-        onChangeText,
-        secureTextEntry = false,
-        theme,
-        focused,
-        setFocused,
-        fieldName,
-    }) => {
-        return (
-            <TextInput
-                style={[
-                    Styles.input,
-                    {
-                        borderColor: focused === fieldName ? theme.borderFocused : theme.border,
-                        color: theme.text,
-                        backgroundColor: theme.background,
-                    },
-                ]}
-                placeholder={placeholder}
-                placeholderTextColor={theme.placeholder}
-                secureTextEntry={secureTextEntry}
-                value={value}
-                onChangeText={onChangeText}
-                onFocus={() => setFocused(fieldName)}
-                onBlur={() => setFocused(null)}
-            />
-        );
+        auth()
+            .signInWithEmailAndPassword(email, password)
+            .then(() => {
+                console.log("Login successful");
+            })
+            .catch((error) => {
+                console.error(error);
+            });
     };
 
     return (
-        <View style={[Styles.Screen, { backgroundColor: theme.background, alignItems: "center" }]}>
+        <View style={[styles.Screen, { backgroundColor: theme.background, alignItems: "center" }]}>
             {/* Theme Toggle */}
             <View style={{ alignItems: "flex-end", margin: hp(3), width: wp(90) }}>
                 <TouchableOpacity onPress={toggleTheme}>
-                    <FontAwesome name={thememode ? "sun-o" : "moon-o"} size={40} color={theme.iconColor} />
+                    <FontAwesome name={darkMode ? "moon-o" : "sun-o"} size={40} color={theme.iconColor} />
                 </TouchableOpacity>
             </View>
 
             {/* Login Container */}
-            <View style={[Styles.LoginContainer, { backgroundColor: theme.containerBackground }]}>
-                <Text style={[Styles.headingText, { color: theme.headingtext }]}>Login</Text>
+            <View style={[styles.LoginContainer, { backgroundColor: theme.containerBackground }]}>
+                <Text style={[styles.headingText, { color: theme.headingtext }]}>Login</Text>
 
-                {/* Email */}
-                <CustomInput
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="email"
-                />
+                {/* Email with Icon */}
+                <View
+                    style={[
+                        styles.inputContainer,
+                        {
+                            borderColor: focused === "email" ? theme.borderFocused : theme.border,
+                            backgroundColor: theme.background,
+                        },
+                    ]}
+                >
+                    <FontAwesome name="envelope" size={22} color={theme.iconColor} style={styles.icon} />
+                    <TextInput
+                        style={[styles.input, { color: theme.text }]}
+                        placeholder="Email"
+                        placeholderTextColor={theme.placeholder}
+                        value={email}
+                        onChangeText={setEmail}
+                        onFocus={() => setFocused("email")}
+                        onBlur={() => setFocused(null)}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                    />
+                </View>
 
-                {/* Password */}
-                <CustomInput
-                    placeholder="Password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="password"
-                />
+                {/* Password with Icon + Eye toggle */}
+                <View
+                    style={[
+                        styles.inputContainer,
+                        {
+                            borderColor: focused === "password" ? theme.borderFocused : theme.border,
+                            backgroundColor: theme.background,
+                        },
+                    ]}
+                >
+                    <FontAwesome name="lock" size={24} color={theme.iconColor} style={styles.icon} />
+                    <TextInput
+                        style={[styles.input, { color: theme.text }]}
+                        placeholder="Password"
+                        placeholderTextColor={theme.placeholder}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        onFocus={() => setFocused("password")}
+                        onBlur={() => setFocused(null)}
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                        <FontAwesome
+                            name={showPassword ? "eye-slash" : "eye"}
+                            size={22}
+                            color={theme.iconColor}
+                            style={styles.iconRight}
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 {/* Login Button */}
-                <TouchableOpacity style={[Styles.loginButton, { backgroundColor: theme.addButton }]} onPress={handleLogin}>
-                    <Text style={[Styles.loginButtonText, { color: theme.addButtonText }]}>Login</Text>
+                <TouchableOpacity style={[styles.loginButton, { backgroundColor: theme.addButton }]} onPress={handleLogin}>
+                    <Text style={[styles.loginButtonText, { color: theme.addButtonText }]}>Login</Text>
                 </TouchableOpacity>
 
-                {/* Don't have an account? */}
-                <View style={Styles.signUpRedirectContainer}>
+                {/* Don’t have an account? */}
+                <View style={styles.signUpRedirectContainer}>
                     <Text style={{ color: theme.text }}>Don’t have an account? </Text>
                     <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
-                        <Text style={[Styles.signUpLink, { color: theme.headingtext }]}>Sign Up</Text>
+                        <Text style={[styles.signUpLink, { color: theme.headingtext }]}>Sign Up</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -142,13 +159,11 @@ export default function Login({ navigation }: any) {
     );
 }
 
-const Styles = StyleSheet.create({
-    Screen: {
-        flex: 1,
-    },
+const styles = StyleSheet.create({
+    Screen: { flex: 1 },
     LoginContainer: {
         width: wp(90),
-        height: hp(80),
+        height: hp(70),
         borderRadius: 20,
         padding: 20,
         justifyContent: "center",
@@ -164,15 +179,24 @@ const Styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 30,
     },
-    input: {
-        width: "100%",
-        height: 55,
-        borderWidth: 2.5,
+    inputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderWidth: 1.5,
         borderRadius: 12,
-        paddingHorizontal: 15,
-        fontSize: 18,
+        paddingHorizontal: 10,
         marginBottom: 20,
-        backgroundColor: "#f9f9f9",
+        height: 55,
+    },
+    icon: {
+        marginRight: 10,
+    },
+    iconRight: {
+        marginLeft: 10,
+    },
+    input: {
+        flex: 1,
+        fontSize: 18,
     },
     loginButton: {
         marginTop: 10,
