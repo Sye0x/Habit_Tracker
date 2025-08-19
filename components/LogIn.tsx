@@ -19,6 +19,7 @@ const lightTheme = {
     addButton: "#abd1a3ff",
     addButtonText: "#fff",
     iconColor: "#ffb888ff",
+    error: "#ff4d4d",
 };
 
 const darkTheme = {
@@ -32,6 +33,7 @@ const darkTheme = {
     addButton: "#4f5bd5",
     addButtonText: "#fff",
     iconColor: "#fff",
+    error: "#ff4d4d",
 };
 
 export default function Login({ navigation }: any) {
@@ -39,6 +41,7 @@ export default function Login({ navigation }: any) {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [focused, setFocused] = useState<string | null>(null);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     const dispatch = useDispatch();
     const darkMode = useSelector((state: RootState) => state.theme);
@@ -62,17 +65,47 @@ export default function Login({ navigation }: any) {
         })();
     }, []);
 
+    const validate = () => {
+        const newErrors: { [key: string]: string } = {};
+        if (!email) newErrors.email = "Email is required";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Invalid email format";
+
+        if (!password) newErrors.password = "Password is required";
+        else if (password.length < 6) newErrors.password = "Password must be at least 6 characters";
+
+        return newErrors;
+    };
+
     const handleLogin = () => {
-        console.log("Login Data:", { email, password });
+        const validationErrors = validate();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+
+        setErrors({}); // clear before Firebase call
         auth()
             .signInWithEmailAndPassword(email, password)
             .then(() => {
                 console.log("Login successful");
+                setEmail("");
+                setPassword("");
             })
             .catch((error) => {
-                console.error(error);
+                let message = "Wrong email or password";
+
+                if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+                    message = "Wrong email or password";
+                } else if (error.code === "auth/invalid-email") {
+                    message = "Invalid email format";
+                } else if (error.code === "auth/too-many-requests") {
+                    message = "Too many failed attempts. Try again later.";
+                }
+
+                setErrors({ general: message });
             });
     };
+
 
     return (
         <View style={[styles.Screen, { backgroundColor: theme.background, alignItems: "center" }]}>
@@ -87,12 +120,23 @@ export default function Login({ navigation }: any) {
             <View style={[styles.LoginContainer, { backgroundColor: theme.containerBackground }]}>
                 <Text style={[styles.headingText, { color: theme.headingtext }]}>Login</Text>
 
+                {/* General Error */}
+                {errors.general && (
+                    <Text style={[styles.errorText, { textAlign: "center", marginBottom: 10 }]}>
+                        {errors.general}
+                    </Text>
+                )}
+
                 {/* Email with Icon */}
                 <View
                     style={[
                         styles.inputContainer,
                         {
-                            borderColor: focused === "email" ? theme.borderFocused : theme.border,
+                            borderColor: errors.email
+                                ? theme.error
+                                : focused === "email"
+                                    ? theme.borderFocused
+                                    : theme.border,
                             backgroundColor: theme.background,
                         },
                     ]}
@@ -110,13 +154,18 @@ export default function Login({ navigation }: any) {
                         keyboardType="email-address"
                     />
                 </View>
+                {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
                 {/* Password with Icon + Eye toggle */}
                 <View
                     style={[
                         styles.inputContainer,
                         {
-                            borderColor: focused === "password" ? theme.borderFocused : theme.border,
+                            borderColor: errors.password
+                                ? theme.error
+                                : focused === "password"
+                                    ? theme.borderFocused
+                                    : theme.border,
                             backgroundColor: theme.background,
                         },
                     ]}
@@ -141,6 +190,7 @@ export default function Login({ navigation }: any) {
                         />
                     </TouchableOpacity>
                 </View>
+                {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
                 {/* Login Button */}
                 <TouchableOpacity style={[styles.loginButton, { backgroundColor: theme.addButton }]} onPress={handleLogin}>
@@ -185,7 +235,7 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderRadius: 12,
         paddingHorizontal: 10,
-        marginBottom: 20,
+        marginBottom: 10,
         height: 55,
     },
     icon: {
@@ -199,7 +249,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
     loginButton: {
-        marginTop: 10,
+        marginTop: 20,
         paddingVertical: 15,
         borderRadius: 12,
         alignItems: "center",
@@ -216,5 +266,11 @@ const styles = StyleSheet.create({
     signUpLink: {
         fontSize: 16,
         fontWeight: "600",
+    },
+    errorText: {
+        color: "#ff4d4d",
+        fontSize: 14,
+        marginBottom: 10,
+        marginLeft: 5,
     },
 });
