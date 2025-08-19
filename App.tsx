@@ -15,6 +15,7 @@ import SettingsScreen from "./components/DashBoardItems/ProfileComponents/Settin
 import NotificationSettingsScreen from "./components/DashBoardItems/ProfileComponents/NotificationSettingsScreen";
 import AboutScreen from "./components/DashBoardItems/ProfileComponents/AboutScreen";
 import SignUp from "./components/SignUp";
+import Login from "./components/LogIn";
 
 // ✅ Strong typing for all routes
 export type RootStackParamList = {
@@ -28,6 +29,7 @@ export type RootStackParamList = {
   NotificationSettingsScreen: undefined;
   AboutScreen: undefined;
   SignUp: undefined;
+  LogIn: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -47,7 +49,7 @@ export default function App() {
 
   return (
     <NavigationContainer onReady={onReady} >
-      <Stack.Navigator initialRouteName={"SignUp"}>
+      <Stack.Navigator initialRouteName={"LogIn"}>
         <Stack.Screen name="GetStarted" component={GetStarted} options={{ headerShown: false }} />
         <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
         <Stack.Screen name="UserDetailsForm" component={UserDetailsForm} options={{ headerShown: false }} />
@@ -58,6 +60,7 @@ export default function App() {
         <Stack.Screen name="NotificationSettingsScreen" component={NotificationSettingsScreen} />
         <Stack.Screen name="AboutScreen" component={AboutScreen} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
+        <Stack.Screen name="LogIn" component={Login} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

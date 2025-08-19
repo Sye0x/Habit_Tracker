@@ -7,13 +7,13 @@ const lightTheme = {
     background: "#f2f8ff",
     containerBackground: "#ffffff",
     text: "#111",
-    headingtext: "#abd1a3ff",   // updated
+    headingtext: "#abd1a3ff",
     border: "#b7b7b7ff",
-    borderFocused: "#ffb888ff", // updated
+    borderFocused: "#ffb888ff",
     placeholder: "#777",
-    addButton: "#abd1a3ff",     // updated
+    addButton: "#abd1a3ff",
     addButtonText: "#fff",
-    iconColor: "#ffb888ff"
+    iconColor: "#ffb888ff",
 };
 
 const darkTheme = {
@@ -26,16 +26,14 @@ const darkTheme = {
     placeholder: "#888",
     addButton: "#4f5bd5",
     addButtonText: "#fff",
-    iconColor: "#fff"
+    iconColor: "#fff",
 };
 
-export default function SignUp({ navigation }: any) {
+export default function Login({ navigation }: any) {
     const [thememode, setTheme] = useState<boolean>(true);
-    const [username, setUsername] = useState<string>("");
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    const [confirmPassword, setConfirmPassword] = useState<string>("");
-    const [focused, setFocused] = useState<string | null>(null); // track which input is focused
+    const [focused, setFocused] = useState<string | null>(null);
 
     const theme = thememode ? lightTheme : darkTheme;
 
@@ -43,11 +41,8 @@ export default function SignUp({ navigation }: any) {
         setTheme(!thememode);
     };
 
-    const handleSignUp = () => {
-        if (password !== confirmPassword) {
-            return;
-        }
-        console.log("Sign Up Data:", { username, email, password });
+    const handleLogin = () => {
+        console.log("Login Data:", { email, password });
     };
 
 
@@ -71,7 +66,7 @@ export default function SignUp({ navigation }: any) {
         theme,
         focused,
         setFocused,
-        fieldName
+        fieldName,
     }) => {
         return (
             <TextInput
@@ -94,7 +89,6 @@ export default function SignUp({ navigation }: any) {
         );
     };
 
-
     return (
         <View style={[Styles.Screen, { backgroundColor: theme.background, alignItems: "center" }]}>
             {/* Theme Toggle */}
@@ -104,20 +98,9 @@ export default function SignUp({ navigation }: any) {
                 </TouchableOpacity>
             </View>
 
-            {/* Sign Up Container */}
-            <View style={[Styles.SignUpContainer, { backgroundColor: theme.containerBackground }]}>
-                <Text style={[Styles.headingText, { color: theme.headingtext }]}>Sign Up</Text>
-
-                {/* Username */}
-                <CustomInput
-                    placeholder="Username"
-                    value={username}
-                    onChangeText={setUsername}
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="username"
-                />
+            {/* Login Container */}
+            <View style={[Styles.LoginContainer, { backgroundColor: theme.containerBackground }]}>
+                <Text style={[Styles.headingText, { color: theme.headingtext }]}>Login</Text>
 
                 {/* Email */}
                 <CustomInput
@@ -142,29 +125,16 @@ export default function SignUp({ navigation }: any) {
                     fieldName="password"
                 />
 
-                {/* Confirm Password */}
-                <CustomInput
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry
-                    theme={theme}
-                    focused={focused}
-                    setFocused={setFocused}
-                    fieldName="confirmPassword"
-                />
-
-
-                {/* Sign Up Button */}
-                <TouchableOpacity style={[Styles.signUpButton, { backgroundColor: theme.addButton }]} onPress={handleSignUp}>
-                    <Text style={[Styles.signUpButtonText, { color: theme.addButtonText }]}>Sign Up</Text>
+                {/* Login Button */}
+                <TouchableOpacity style={[Styles.loginButton, { backgroundColor: theme.addButton }]} onPress={handleLogin}>
+                    <Text style={[Styles.loginButtonText, { color: theme.addButtonText }]}>Login</Text>
                 </TouchableOpacity>
 
-                {/* Already have an account? */}
-                <View style={Styles.loginRedirectContainer}>
-                    <Text style={{ color: theme.text }}>Already have an account? </Text>
-                    <TouchableOpacity onPress={() => navigation.navigate("LogIn")}>
-                        <Text style={[Styles.loginLink, { color: theme.headingtext }]}>Login</Text>
+                {/* Don't have an account? */}
+                <View style={Styles.signUpRedirectContainer}>
+                    <Text style={{ color: theme.text }}>Don’t have an account? </Text>
+                    <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+                        <Text style={[Styles.signUpLink, { color: theme.headingtext }]}>Sign Up</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -176,8 +146,9 @@ const Styles = StyleSheet.create({
     Screen: {
         flex: 1,
     },
-    SignUpContainer: {
+    LoginContainer: {
         width: wp(90),
+        height: hp(80),
         borderRadius: 20,
         padding: 20,
         justifyContent: "center",
@@ -203,22 +174,22 @@ const Styles = StyleSheet.create({
         marginBottom: 20,
         backgroundColor: "#f9f9f9",
     },
-    signUpButton: {
+    loginButton: {
         marginTop: 10,
         paddingVertical: 15,
         borderRadius: 12,
         alignItems: "center",
     },
-    signUpButtonText: {
+    loginButtonText: {
         fontSize: 20,
         fontWeight: "600",
     },
-    loginRedirectContainer: {
+    signUpRedirectContainer: {
         flexDirection: "row",
         justifyContent: "center",
         marginTop: 20,
     },
-    loginLink: {
+    signUpLink: {
         fontSize: 16,
         fontWeight: "600",
     },
