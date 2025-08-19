@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-firebase/app": "^23.0.1",
     "@react-native-vector-icons/evil-icons": "^12.3.0",
     "@react-native-vector-icons/fontawesome": "^12.3.0",
     "@react-native-vector-icons/fontawesome5": "^12.2.0",
@@ -28,6 +29,7 @@
     "react-native-image-picker": "^8.2.1",
     "react-native-pager-view": "^6.9.1",
     "react-native-paper": "^5.14.5",
+    "react-native-responsive-screen": "^1.4.2",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.13.1",
     "react-redux": "^9.2.0",

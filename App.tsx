@@ -14,6 +14,7 @@ import CalorieCounterScreen from "./components/DashBoardItems/DietComponents/Cal
 import SettingsScreen from "./components/DashBoardItems/ProfileComponents/Settings";
 import NotificationSettingsScreen from "./components/DashBoardItems/ProfileComponents/NotificationSettingsScreen";
 import AboutScreen from "./components/DashBoardItems/ProfileComponents/AboutScreen";
+import SignUp from "./components/SignUp";
 
 // ✅ Strong typing for all routes
 export type RootStackParamList = {
@@ -26,56 +27,27 @@ export type RootStackParamList = {
   SettingsScreen: undefined;
   NotificationSettingsScreen: undefined;
   AboutScreen: undefined;
+  SignUp: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const storedName = await AsyncStorage.getItem("name");
-        setInitialRoute(storedName ? "Dashboard" : "GetStarted");
-      } catch (e) {
-        console.log("AsyncStorage error:", e);
-        setInitialRoute("GetStarted");
-      }
-    };
-
-    init();
-  }, []);
 
   // Hide splash after navigation container is mounted
   const onReady = () => {
     BootSplash.hide({ fade: true });
   };
 
-  if (!initialRoute) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#c1ff72" }}>
-        <ActivityIndicator size="large" color="#77a366ff" />
-      </View>
-    );
-  }
 
 
 
-  if (!initialRoute) {
-    // While deciding route -> show loader
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#c1ff72" }}>
-        <View style={{ transform: [{ scale: 3 }] }}>
-          <ActivityIndicator size="large" color="#77a366ff" />
-        </View>
-      </View>
-    );
-  }
+
 
   return (
     <NavigationContainer onReady={onReady} >
-      <Stack.Navigator initialRouteName={initialRoute}>
+      <Stack.Navigator initialRouteName={"SignUp"}>
         <Stack.Screen name="GetStarted" component={GetStarted} options={{ headerShown: false }} />
         <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
         <Stack.Screen name="UserDetailsForm" component={UserDetailsForm} options={{ headerShown: false }} />
@@ -85,6 +57,7 @@ export default function App() {
         <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="NotificationSettingsScreen" component={NotificationSettingsScreen} />
         <Stack.Screen name="AboutScreen" component={AboutScreen} />
+        <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
