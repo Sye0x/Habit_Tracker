@@ -1,10 +1,8 @@
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
-import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ActivityIndicator, View } from "react-native";
 import BootSplash from "react-native-bootsplash";
 
+// Screens
 import GetStarted from "./components/GetStarted";
 import Dashboard from "./components/Dashboard";
 import UserDetailsForm from "./components/UserDetailsForm";
@@ -15,13 +13,14 @@ import SettingsScreen from "./components/DashBoardItems/ProfileComponents/Settin
 import NotificationSettingsScreen from "./components/DashBoardItems/ProfileComponents/NotificationSettingsScreen";
 import AboutScreen from "./components/DashBoardItems/ProfileComponents/AboutScreen";
 import SignUp from "./components/SignUp";
-import Login from "./components/LogIn";
+import LogIn from "./components/LogIn";
+import ForgotPassword from "./components/ForgotPassword";
 
 // ✅ Strong typing for all routes
 export type RootStackParamList = {
   GetStarted: undefined;
   Dashboard: undefined;
-  UserDetailsForm: undefined;
+  UserDetailsForm: { uid: string };
   TimerScreen: undefined;
   DietDetailScreen: { DietPlanName: string };
   CalorieCounterScreen: undefined;
@@ -30,26 +29,19 @@ export type RootStackParamList = {
   AboutScreen: undefined;
   SignUp: undefined;
   LogIn: undefined;
+  ForgotPassword: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
-
-
-  // Hide splash after navigation container is mounted
   const onReady = () => {
     BootSplash.hide({ fade: true });
   };
 
-
-
-
-
-
   return (
-    <NavigationContainer onReady={onReady} >
-      <Stack.Navigator initialRouteName={"LogIn"}>
+    <NavigationContainer onReady={onReady}>
+      <Stack.Navigator initialRouteName="LogIn">
         <Stack.Screen name="GetStarted" component={GetStarted} options={{ headerShown: false }} />
         <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
         <Stack.Screen name="UserDetailsForm" component={UserDetailsForm} options={{ headerShown: false }} />
@@ -60,7 +52,8 @@ export default function App() {
         <Stack.Screen name="NotificationSettingsScreen" component={NotificationSettingsScreen} />
         <Stack.Screen name="AboutScreen" component={AboutScreen} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
-        <Stack.Screen name="LogIn" component={Login} options={{ headerShown: false }} />
+        <Stack.Screen name="LogIn" component={LogIn} options={{ headerShown: false }} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { useSelector, useDispatch } from "react-redux";
@@ -87,16 +87,14 @@ export default function Login({ navigation }: any) {
         auth()
             .signInWithEmailAndPassword(email, password)
             .then(() => {
-                console.log("Login successful");
+                Alert.alert("Login Successfull")
                 setEmail("");
                 setPassword("");
             })
             .catch((error) => {
                 let message = "Wrong email or password";
 
-                if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
-                    message = "Wrong email or password";
-                } else if (error.code === "auth/invalid-email") {
+                if (error.code === "auth/invalid-email") {
                     message = "Invalid email format";
                 } else if (error.code === "auth/too-many-requests") {
                     message = "Too many failed attempts. Try again later.";
@@ -141,7 +139,7 @@ export default function Login({ navigation }: any) {
                         },
                     ]}
                 >
-                    <FontAwesome name="envelope" size={22} color={theme.iconColor} style={styles.icon} />
+                    <FontAwesome name="envelope" size={20} color={theme.iconColor} style={styles.icon} />
                     <TextInput
                         style={[styles.input, { color: theme.text }]}
                         placeholder="Email"
@@ -170,7 +168,7 @@ export default function Login({ navigation }: any) {
                         },
                     ]}
                 >
-                    <FontAwesome name="lock" size={24} color={theme.iconColor} style={styles.icon} />
+                    <FontAwesome name="lock" size={22} color={theme.iconColor} style={styles.icon} />
                     <TextInput
                         style={[styles.input, { color: theme.text }]}
                         placeholder="Password"
@@ -191,11 +189,15 @@ export default function Login({ navigation }: any) {
                     </TouchableOpacity>
                 </View>
                 {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                <TouchableOpacity style={styles.forgotpassword} onPress={() => navigation.navigate("ForgotPassword")}>
+                    <Text style={[{ color: theme.headingtext, fontSize: 14 }]}>Forgot Password?</Text>
+                </TouchableOpacity>
 
                 {/* Login Button */}
                 <TouchableOpacity style={[styles.loginButton, { backgroundColor: theme.addButton }]} onPress={handleLogin}>
                     <Text style={[styles.loginButtonText, { color: theme.addButtonText }]}>Login</Text>
                 </TouchableOpacity>
+
 
                 {/* Don’t have an account? */}
                 <View style={styles.signUpRedirectContainer}>
@@ -213,7 +215,7 @@ const styles = StyleSheet.create({
     Screen: { flex: 1 },
     LoginContainer: {
         width: wp(90),
-        height: hp(70),
+        height: hp(80),
         borderRadius: 20,
         padding: 20,
         justifyContent: "center",
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
     loginButton: {
-        marginTop: 20,
+        marginTop: 15,
         paddingVertical: 15,
         borderRadius: 12,
         alignItems: "center",
@@ -273,4 +275,8 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         marginLeft: 5,
     },
+    forgotpassword: {
+        marginTop: 2,
+        marginLeft: 10
+    }
 });

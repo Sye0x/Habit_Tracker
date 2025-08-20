@@ -2,10 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, Modal, FlatList, ScrollView } from 'react-native';
 import { RadioButton, Snackbar } from 'react-native-paper';
-import { ActivityIndicator } from "react-native";
+import firestore from '@react-native-firebase/firestore';
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
 
+type UserDetailsFormProps = {
+    route: RouteProp<RootStackParamList, "UserDetailsForm">;
+    navigation: any;
+};
 
-function UserDetailsForm() {
+const UserDetailsForm = ({ route, navigation }: UserDetailsFormProps) => {
+    const { uid } = route.params;
     const [name, setName] = useState("");
     const [age, setAge] = useState("");
     const [occupation, setOccupation] = useState("");
@@ -15,11 +22,13 @@ function UserDetailsForm() {
     const [description, setDescription] = useState("");
     const [snackbarVisible, setSnackbarVisible] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const frequencyList = [
         { label: "Daily", value: "Daily" },
-        { label: "2-3 Days a week", value: "2-3 Days a week" },
-        { label: "4-5 Days a week", value: "4-5 Days a week" }
+        { label: "Weekly", value: "Weekly" },
+        { label: "Monthly", value: "Monthly" },
+        { label: "Occasionally", value: "Occasionally" }
     ];
 
     const handleSelect = (item: string) => {
@@ -32,7 +41,6 @@ function UserDetailsForm() {
         const trimmedOccupation = occupation.trim();
         const numericAge = Number(age);
         const trimmedDescription = description.trim();
-
         const errors: string[] = [];
 
         if (trimmedName.length < 3) errors.push("Name must be at least 3 characters long.");
@@ -46,23 +54,56 @@ function UserDetailsForm() {
             return;
         }
 
+        try {
+            setLoading(true);
 
-        await AsyncStorage.setItem("name", name);
-        await AsyncStorage.setItem("age", age);
-        await AsyncStorage.setItem("occupation", occupation);
-        await AsyncStorage.setItem("gender", gender);
-        await AsyncStorage.setItem("frequency", frequency);
-        await AsyncStorage.setItem("description", description);
-        setSnackbarMessage("Form submitted successfully!");
-        setSnackbarVisible(true);
+            // Save to AsyncStorage efficiently
+            await AsyncStorage.multiSet([
+                ["name", name],
+                ["age", age],
+                ["occupation", occupation],
+                ["gender", gender],
+                ["frequency", frequency],
+                ["description", description],
+            ]);
 
-        setName("");
-        setAge("");
-        setOccupation("");
-        setGender("Male");
-        setFrequency("Daily");
-        setDescription("");
-    }
+            // Save to Firestore safely
+            await firestore()
+                .collection("users")
+                .doc(uid)
+                .set(
+                    {
+                        name,
+                        age,
+                        occupation,
+                        gender,
+                        frequency,
+                        description,
+                    },
+                    { merge: true } // ✅ Important to avoid overwriting
+                );
+
+            setSnackbarMessage("Form submitted successfully!");
+            setSnackbarVisible(true);
+
+            // Reset form fields
+            setName("");
+            setAge("");
+            setOccupation("");
+            setGender("Male");
+            setFrequency("Daily");
+            setDescription("");
+
+            // Navigate to login screen
+            navigation.navigate("LogIn");
+
+        } catch (error: any) {
+            setSnackbarMessage("Error: " + error.message);
+            setSnackbarVisible(true);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View style={styles.wrapper}>
@@ -72,14 +113,14 @@ function UserDetailsForm() {
                     <View style={styles.form}>
                         <TextInput
                             placeholder='Name'
-                            placeholderTextColor={"#000"}
+                            placeholderTextColor="#000"
                             style={styles.inputfield}
                             value={name}
                             onChangeText={setName}
                         />
                         <TextInput
                             placeholder='Age'
-                            placeholderTextColor={"#000"}
+                            placeholderTextColor="#000"
                             style={styles.inputfield}
                             keyboardType="number-pad"
                             value={age}
@@ -87,7 +128,7 @@ function UserDetailsForm() {
                         />
                         <TextInput
                             placeholder='Occupation'
-                            placeholderTextColor={"#000"}
+                            placeholderTextColor="#000"
                             style={styles.inputfield}
                             value={occupation}
                             onChangeText={setOccupation}
@@ -98,6 +139,7 @@ function UserDetailsForm() {
                                 <RadioButton.Item label='Female' value='Female' />
                             </View>
                         </RadioButton.Group>
+
                         <Text>How often do you practice a habit?</Text>
                         <TouchableOpacity
                             style={styles.customDropdown}
@@ -109,17 +151,27 @@ function UserDetailsForm() {
                         <Text style={{ marginTop: 15 }}>Describe your habits in detail:</Text>
                         <TextInput
                             placeholder="E.g., I wake up at 6 AM, meditate for 10 minutes..."
-                            placeholderTextColor={"#000"}
+                            placeholderTextColor="#000"
                             style={styles.multilineInput}
                             multiline={true}
                             numberOfLines={4}
                             value={description}
                             onChangeText={setDescription}
                         />
-                        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#fff" }}>Submit</Text>
+
+                        <TouchableOpacity
+                            style={[styles.submitButton, loading && { opacity: 0.7 }]}
+                            onPress={handleSubmit}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <Text style={{ color: "#fff" }}>Saving...</Text>
+                            ) : (
+                                <Text style={{ fontSize: 18, fontWeight: "bold", color: "#fff" }}>Submit</Text>
+                            )}
                         </TouchableOpacity>
 
+                        {/* Frequency Modal */}
                         <Modal
                             visible={showModal}
                             transparent={true}
@@ -147,56 +199,26 @@ function UserDetailsForm() {
                 </View>
             </ScrollView>
 
-            {snackbarVisible && (
-                <View style={styles.snackbarContainer}>
-                    <Snackbar
-                        visible={snackbarVisible}
-                        onDismiss={() => setSnackbarVisible(false)}
-                        duration={4000}
-                        action={{
-                            label: 'OK',
-                            labelStyle: {
-                                color: "#fff",
-                                backgroundColor: "#bad9b4ff",
-                                height: 40,
-                                width: 40,
-                                borderRadius: 20,
-                                textAlign: "center",
-                                textAlignVertical: "center", // Only works on Android
-                                lineHeight: 40, // For vertical centering (iOS/web)
-                            },
-                            onPress: () => setSnackbarVisible(false),
-                        }}
-                        style={styles.snackbar}
-                    >
-                        {snackbarMessage.split('\n').map((msg, idx) => (
-                            <Text key={idx} style={{ color: '#000', fontSize: 14, marginBottom: 20 }}>{msg}</Text>
-                        ))}
-                    </Snackbar>
-
-                </View>
-            )
-            }
-        </View >
+            <Snackbar
+                visible={snackbarVisible}
+                onDismiss={() => setSnackbarVisible(false)}
+                duration={4000}
+                style={styles.snackbar}
+            >
+                {snackbarMessage}
+            </Snackbar>
+        </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
-    wrapper: {
-        flex: 1,
-        backgroundColor: "#bee1faff",
-    },
-    container: {
-        flexGrow: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingVertical: 20,
-    },
+    wrapper: { flex: 1, backgroundColor: "#bee1faff" },
+    container: { flexGrow: 1, justifyContent: "center", alignItems: "center", paddingVertical: 20 },
     FormCard: {
         backgroundColor: "#e2d7d7ff",
         width: "85%",
         borderRadius: 15,
-        elevation: 20,
+        elevation: 10,
         alignItems: "center",
         padding: 20
     },
@@ -206,9 +228,7 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         marginBottom: 10,
     },
-    form: {
-        width: "100%",
-    },
+    form: { width: "100%" },
     inputfield: {
         borderBottomColor: "#000",
         borderBottomWidth: 1,
@@ -261,20 +281,13 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         elevation: 10
     },
-    snackbarContainer: {
-        position: 'absolute',
-        top: "65%",
-        left: 20,
-        right: 20,
-        zIndex: 100,
-
-    },
     snackbar: {
         backgroundColor: "#ffb2b2ff",
-        elevation: 30,
-        borderRadius: 20,
-        height: "90%",
-        width: "95%"
+        elevation: 10,
+        borderRadius: 10,
+        marginHorizontal: 20,
+        bottom: 30,
+        position: "absolute"
     },
 });
 

@@ -7,6 +7,7 @@ import type { RootState } from "./redux/rootReducer";
 import { useDispatch, useSelector } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import auth from "@react-native-firebase/auth";
+import firestore from '@react-native-firebase/firestore';
 
 const lightTheme = {
     background: "#f2f8ff",
@@ -81,23 +82,35 @@ export default function SignUp({ navigation }: any) {
         return newErrors;
     };
 
-    const handleSignUp = () => {
+    const handleSignUp = async () => {
         const validationErrors = validate();
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
             return;
         }
 
-        auth()
+        const userCredential = await auth()
             .createUserWithEmailAndPassword(email, password)
-            .then(() => {
+            .then(async (userCredential) => {
                 setUsername("");
                 setPassword("");
                 setConfirmPassword("");
                 setEmail("");
                 setErrors({});
+                await firestore()
+                    .collection("users")
+                    .doc(userCredential.user.uid)
+                    .set(
+                        {
+                            email,
+                            username,
+                            createdAt: firestore.FieldValue.serverTimestamp(),
+                        },
+                        { merge: true } // ✅ Ensures we never overwrite later
+                    );
+
                 Alert.alert("Sign Up Successfully");
-                navigation.navigate("LogIn");
+                navigation.navigate("UserDetailsForm", { uid: userCredential.user.uid });
             })
             .catch((err) => {
                 setErrors({ general: err.message });
