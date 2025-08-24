@@ -102,6 +102,7 @@ export default function SignUp({ navigation }: any) {
                     .doc(userCredential.user.uid)
                     .set(
                         {
+
                             email,
                             username,
                             createdAt: firestore.FieldValue.serverTimestamp(),

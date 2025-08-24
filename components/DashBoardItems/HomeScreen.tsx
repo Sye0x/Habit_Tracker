@@ -45,6 +45,8 @@ const darkTheme = {
 
 function HomeScreen({ navigation }: any) {
     const darkMode = useSelector((state: RootState) => state.theme);
+    const user = useSelector((state: RootState) => state.userData);
+
     const theme = darkMode ? darkTheme : lightTheme;
     useEffect(() => { resetHabitsIfNeeded(); }, []);
     const dispatch = useDispatch();

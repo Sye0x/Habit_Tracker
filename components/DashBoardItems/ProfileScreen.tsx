@@ -14,6 +14,7 @@ import { userdata } from '../redux/userDataAction';
 import firestore from "@react-native-firebase/firestore";
 
 
+
 interface Profile {
     name: string;
     age: string;
@@ -224,17 +225,19 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                     </View>
                 </View>
 
-                <View style={styles.badgeContainer}>
-                    {['#EarlyBird', '#Learner', '#Kind', '#GoalOriented'].map(tag => (
-                        <View key={tag} style={styles.badge}>
-                            <Text style={styles.badgeText}>{tag}</Text>
-                        </View>
-                    ))}
-                </View>
 
                 {profile.lastUpdated ? (
                     <Text style={styles.lastUpdated}>Last updated: {profile.lastUpdated}</Text>
                 ) : null}
+
+                <View style={{ justifyContent: "center", alignItems: "center", marginTop: 15 }}>
+                    <TouchableOpacity style={styles.logoutButton} onPress={() => { navigation.navigate("LogIn") }}>
+                        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "500" }}>
+                            LogOut
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
             </ScrollView>
 
             {/* Edit Modal */}
@@ -683,6 +686,14 @@ const getStyles = (darkMode: boolean) => StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: darkMode ? '#444' : '#f0f0f0',
     },
+    logoutButton: {
+        backgroundColor: "#eb1616ff",
+        width: "40%",
+        height: 50,
+        borderRadius: 10,
+        justifyContent: "center",
+        alignItems: "center"
+    }
 });
 
 export default ProfileScreen;
