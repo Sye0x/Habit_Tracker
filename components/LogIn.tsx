@@ -5,8 +5,10 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-nat
 import { useSelector, useDispatch } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { toggletheme } from "./redux/action";
+import { userdata } from "./redux/userDataAction";
 import type { RootState } from "./redux/rootReducer";
 import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
 
 const lightTheme = {
     background: "#f2f8ff",
@@ -86,10 +88,26 @@ export default function Login({ navigation }: any) {
         setErrors({}); // clear before Firebase call
         auth()
             .signInWithEmailAndPassword(email, password)
-            .then(() => {
-                Alert.alert("Login Successfull")
+            .then(async (userCred) => {
+                Alert.alert("Login Successful");
                 setEmail("");
                 setPassword("");
+
+                const docSnap = await firestore()
+                    .collection("users")
+                    .doc(userCred.user.uid)
+                    .get();
+
+                const userObj = docSnap.data();
+                const safeUserObj = {
+                    ...userObj,
+                    createdAt: userObj?.createdAt?.toDate().toISOString(),
+                    uid: userCred.user.uid
+                };
+
+                dispatch(userdata(safeUserObj));  // ✅ get plain object
+                navigation.navigate("Dashboard");
+
             })
             .catch((error) => {
                 let message = "Wrong email or password";
@@ -102,6 +120,8 @@ export default function Login({ navigation }: any) {
 
                 setErrors({ general: message });
             });
+
+
     };
 
 

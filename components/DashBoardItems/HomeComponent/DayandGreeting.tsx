@@ -10,6 +10,7 @@ type Day = { date: number; status: string; day: number };
 function DayandGreeting() {
     // Get dark mode value from Redux store
     const isDark = useSelector((state: RootState) => state.theme);
+    const user = useSelector((state: RootState) => state.userData);
 
     const [name, setName] = useState<string>("");
     const [week, setWeek] = useState<Day[]>([]);
@@ -92,7 +93,7 @@ function DayandGreeting() {
     return (
         <View style={[{ backgroundColor: isDark ? "#121212" : "#f0f4f8" }]}>
             <Text style={[styles.greeting, { color: isDark ? "#fff" : "#000" }]}>
-                Good Morning {name}
+                Good Morning {user.name}
             </Text>
             <Text style={{
                 fontSize: 22,

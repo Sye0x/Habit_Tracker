@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ImageBackground, Text, TouchableOpacity, Image, ScrollView, Modal, TextInput, Alert, } from 'react-native';
+import {
+    StyleSheet, View, ImageBackground, Text,
+    TouchableOpacity, Image, ScrollView, Modal,
+    TextInput, Alert
+} from 'react-native';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import { toggletheme } from '../redux/action';  // Adjust import path
-import type { RootState } from '../redux/rootReducer'; // Adjust import path
+import { toggletheme } from '../redux/action';  // adjust path
+import type { RootState } from '../redux/rootReducer';    // adjust path
+import { userdata } from '../redux/userDataAction';
+import firestore from "@react-native-firebase/firestore";
+
 
 interface Profile {
     name: string;
@@ -27,7 +34,20 @@ interface ProfileScreenProps {
 const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
     const dispatch = useDispatch();
     const darkMode = useSelector((state: RootState) => state.theme);
+    const user = useSelector((state: RootState) => state.userData);
 
+    const [profile, setProfile] = useState<Profile>({
+        ...user,
+        photoUri: undefined,
+    });
+
+    const [editVisible, setEditVisible] = useState<boolean>(false);
+    const [editProfile, setEditProfile] = useState<Profile>({ ...profile });
+    const [showFrequencyList, setShowFrequencyList] = useState<boolean>(false);
+
+    const styles = getStyles(darkMode);
+
+    // Load theme from storage
     useEffect(() => {
         (async () => {
             const savedTheme = await AsyncStorage.getItem("colorMode");
@@ -40,87 +60,73 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
         })();
     }, []);
 
-    const [profile, setProfile] = useState<Profile>({
-        name: '',
-        age: '',
-        occupation: '',
-        gender: '',
-        frequency: '',
-        description: '',
-        followers: '0',
-        friends: '0',
-        lastUpdated: '',
-        photoUri: undefined,
-    });
-
-    const [editVisible, setEditVisible] = useState<boolean>(false);
-    const [editProfile, setEditProfile] = useState<Profile>({ ...profile });
-    const [showFrequencyList, setShowFrequencyList] = useState<boolean>(false);
-
-    const styles = getStyles(darkMode);
-
+    // Load profile photo only from AsyncStorage
     useEffect(() => {
-        const loadProfile = async () => {
+        const loadPhoto = async () => {
             try {
-                const name = await AsyncStorage.getItem('name') || '';
-                const age = await AsyncStorage.getItem('age') || '';
-                const occupation = await AsyncStorage.getItem('occupation') || '';
-                const gender = await AsyncStorage.getItem('gender') || '';
-                const frequency = await AsyncStorage.getItem('frequency') || '';
-                const description = await AsyncStorage.getItem('description') || '';
-                const followers = await AsyncStorage.getItem('followers') || '0';
-                const friends = await AsyncStorage.getItem('friends') || '0';
-                const lastUpdated = await AsyncStorage.getItem('lastUpdated') || '';
                 const photoUri = await AsyncStorage.getItem('photoUri') || undefined;
-
-                const loadedProfile: Profile = {
-                    name, age, occupation, gender, frequency,
-                    description, followers, friends, lastUpdated, photoUri
-                };
-
-                setProfile(loadedProfile);
-                setEditProfile(loadedProfile);
+                setProfile(prev => ({ ...user, photoUri }));
+                setEditProfile(prev => ({ ...user, photoUri }));
             } catch (error) {
-                console.error('Failed to load profile:', error);
+                console.error('Failed to load photo:', error);
             }
         };
-        loadProfile();
-    }, []);
+        loadPhoto();
+    }, [user]);
 
     const handleSave = async () => {
         const updatedProfile: Profile = {
             ...editProfile,
-            lastUpdated: new Date().toLocaleDateString()
+            lastUpdated: new Date().toLocaleDateString(),
         };
-        setProfile(updatedProfile); // ✅ Now profile updates only when saved
+
+        setProfile(updatedProfile);
         setEditVisible(false);
 
-        try {
-            await AsyncStorage.setItem('name', updatedProfile.name);
-            await AsyncStorage.setItem('age', updatedProfile.age);
-            await AsyncStorage.setItem('occupation', updatedProfile.occupation);
-            await AsyncStorage.setItem('gender', updatedProfile.gender);
-            await AsyncStorage.setItem('frequency', updatedProfile.frequency);
-            await AsyncStorage.setItem('description', updatedProfile.description);
-            await AsyncStorage.setItem('lastUpdated', updatedProfile.lastUpdated);
+        // ✅ Update Redux store (all except photoUri)
+        dispatch(userdata({
+            ...user,
+            name: updatedProfile.name,
+            age: updatedProfile.age,
+            occupation: updatedProfile.occupation,
+            gender: updatedProfile.gender,
+            frequency: updatedProfile.frequency,
+            description: updatedProfile.description,
+            lastUpdated: updatedProfile.lastUpdated,
+        }));
 
+        try {
+            // ✅ Update Firestore user document
+            await firestore()
+                .collection("users")
+                .doc(user.uid)   // make sure user.uid exists in Redux
+                .update({
+                    name: updatedProfile.name,
+                    age: updatedProfile.age,
+                    occupation: updatedProfile.occupation,
+                    gender: updatedProfile.gender,
+                    frequency: updatedProfile.frequency,
+                    description: updatedProfile.description,
+                    lastUpdated: updatedProfile.lastUpdated,
+                });
+
+            // ✅ Save only photoUri to AsyncStorage (local only)
             if (updatedProfile.photoUri) {
-                await AsyncStorage.setItem('photoUri', updatedProfile.photoUri); // ✅ Save here
+                await AsyncStorage.setItem("photoUri", updatedProfile.photoUri);
             } else {
-                await AsyncStorage.removeItem('photoUri');
+                await AsyncStorage.removeItem("photoUri");
             }
+
+            Alert.alert("Profile Updated", "Your changes have been saved successfully.");
         } catch (error) {
-            console.error('Failed to save profile:', error);
+            console.error("Failed to update profile:", error);
+            Alert.alert("Error", "Could not save your profile. Please try again.");
         }
     };
 
-
     const pickImage = () => {
         launchImageLibrary(
-            {
-                mediaType: 'photo',
-                quality: 0.7,
-            },
+            { mediaType: 'photo', quality: 0.7 },
             (response) => {
                 if (response.didCancel) {
                     // user cancelled
@@ -129,14 +135,12 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                 } else if (response.assets && response.assets.length > 0) {
                     const uri = response.assets[0].uri;
                     if (uri) {
-                        // ✅ Only update editProfile here
                         setEditProfile(prev => ({ ...prev, photoUri: uri }));
                     }
                 }
             }
         );
     };
-
 
     return (
         <View style={styles.container}>
@@ -149,21 +153,24 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                     <TouchableOpacity
                         style={styles.optionsButton}
                         onPress={() => {
-                            setEditProfile(profile); // ✅ reset to saved values
+                            setEditProfile(profile);
                             setEditVisible(true);
                         }}
                     >
                         <FontAwesome name="pencil" color="#fff" size={24} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.optionsButton} onPress={() => navigation.navigate("SettingsScreen")}>
+                    <TouchableOpacity
+                        style={styles.optionsButton}
+                        onPress={() => navigation.navigate("SettingsScreen")}
+                    >
                         <FontAwesome name="cog" color="#fff" size={24} />
                     </TouchableOpacity>
                 </View>
-
                 <View style={styles.headerOverlay} />
             </ImageBackground>
 
+            {/* Profile Section */}
             <View style={styles.profileSection}>
                 <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
                     <View style={styles.profilePicWrapper}>
@@ -180,6 +187,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                 <Text style={styles.profileName}>{profile.name || 'Your Name'}</Text>
             </View>
 
+            {/* Profile Info */}
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.infoCard}>
                     <Text style={styles.cardTitle}>Profile Details</Text>
@@ -229,21 +237,19 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                 ) : null}
             </ScrollView>
 
-            {/* Edit modal */}
+            {/* Edit Modal */}
             <Modal visible={editVisible} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
                         <Text style={styles.modalTitle}>Edit Profile</Text>
 
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-
                             <TouchableOpacity onPress={pickImage} style={styles.modalProfilePicWrapper}>
                                 {editProfile.photoUri ? (
                                     <Image source={{ uri: editProfile.photoUri }} style={styles.modalProfilePic} />
                                 ) : (
                                     <Image source={require('../../assets/images/avatar.jpg')} style={styles.modalProfilePic} />
                                 )}
-
                                 <Text style={styles.photoHintText}>Tap to change photo</Text>
                             </TouchableOpacity>
 
@@ -265,8 +271,8 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                                     style={styles.inputField}
                                     value={editProfile.age}
                                     onChangeText={text => setEditProfile(prev => ({ ...prev, age: text }))}
-                                    placeholder="Enter your age"
                                     keyboardType="numeric"
+                                    placeholder="Enter your age"
                                     placeholderTextColor={darkMode ? "#aaa" : "#999"}
                                 />
                             </View>
@@ -326,7 +332,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                                                     setShowFrequencyList(false);
                                                 }}
                                             >
-                                                <Text style={{ color: (darkMode ? '#eee' : '#2c3e50') }}>{freq}</Text>
+                                                <Text style={{ color: darkMode ? '#eee' : '#2c3e50' }}>{freq}</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -345,7 +351,6 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                                     placeholderTextColor={darkMode ? "#aaa" : "#999"}
                                 />
                             </View>
-
                         </ScrollView>
 
                         <View style={styles.modalButtons}>
@@ -357,11 +362,14 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </View >
-            </Modal >
-        </View >
+                </View>
+            </Modal>
+        </View>
     );
 };
+
+
+
 
 const getStyles = (darkMode: boolean) => StyleSheet.create({
     container: {

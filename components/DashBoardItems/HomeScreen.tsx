@@ -9,6 +9,7 @@ import type { RootState } from './../redux/rootReducer';  // Adjust path
 import { useDispatch } from 'react-redux';
 import { toggletheme } from '../redux/action'; // adjust path if needed
 
+
 type CardDetail = {
     title: string;
     description: string;
