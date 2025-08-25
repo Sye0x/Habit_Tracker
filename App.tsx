@@ -15,7 +15,8 @@ import AboutScreen from "./components/DashBoardItems/ProfileComponents/AboutScre
 import SignUp from "./components/SignUp";
 import LogIn from "./components/LogIn";
 import ForgotPassword from "./components/ForgotPassword";
-
+//Frontend React Native
+//Backend Firebase
 // ✅ Strong typing for all routes
 export type RootStackParamList = {
   GetStarted: undefined;
