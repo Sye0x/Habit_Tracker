@@ -100,9 +100,10 @@ export default function Login({ navigation }: any) {
                     .get();
 
                 const userObj = docSnap.data();
+                const createdAt = userObj?.createdAt?.toDate?.() ?? new Date(); //
                 const safeUserObj = {
                     ...userObj,
-                    createdAt: userObj?.createdAt?.toDate().toISOString(),
+                    createdAt: createdAt.toISOString(),
                     uid: userCred.user.uid
                 };
 

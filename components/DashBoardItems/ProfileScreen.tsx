@@ -61,6 +61,66 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
         })();
     }, []);
 
+    // Load profile from Firestore (including photoUri)
+    useEffect(() => {
+        const loadProfile = async () => {
+            try {
+                const docSnap = await firestore().collection('users').doc(user.uid).get();
+                const data = docSnap.data() as Profile;
+                if (data) {
+                    setProfile(prev => ({ ...prev, ...data }));
+                    setEditProfile(prev => ({ ...prev, ...data }));
+                }
+            } catch (err) {
+                console.error('Failed to fetch profile:', err);
+            }
+        };
+        loadProfile();
+    }, [user.uid]);
+
+    // Pick image
+    const pickImage = () => {
+        launchImageLibrary(
+            { mediaType: 'photo', quality: 0.7, includeBase64: true },
+            async (response) => {
+                if (response.didCancel) return;
+                if (response.errorCode) {
+                    Alert.alert('Error', response.errorMessage || 'Error picking image');
+                } else if (response.assets && response.assets.length > 0) {
+                    const asset = response.assets[0];
+                    if (asset.uri && asset.base64) {
+                        const base64Data = `data:${asset.type};base64,${asset.base64}`;
+                        setEditProfile(prev => ({ ...prev, photoUri: base64Data }));
+                    }
+                }
+            }
+        );
+    };
+
+    // Handle Save (only update profile in Firestore)
+    const handleSave = async () => {
+        const updatedProfile: Profile = {
+            ...editProfile,
+            lastUpdated: new Date().toLocaleDateString(),
+        };
+
+        setProfile(updatedProfile);
+        setEditVisible(false);
+
+        try {
+            await firestore().collection('users').doc(user.uid).set({
+                ...updatedProfile,
+                photoUri: updatedProfile.photoUri || null,
+            });
+
+            Alert.alert("Profile Updated", "Your changes have been saved successfully.");
+        } catch (err) {
+            console.error('Failed to update profile:', err);
+            Alert.alert('Error', 'Could not save your profile. Please try again.');
+        }
+    };
+
+
     // Load profile photo only from AsyncStorage
     useEffect(() => {
         const loadPhoto = async () => {
@@ -75,73 +135,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
         loadPhoto();
     }, [user]);
 
-    const handleSave = async () => {
-        const updatedProfile: Profile = {
-            ...editProfile,
-            lastUpdated: new Date().toLocaleDateString(),
-        };
 
-        setProfile(updatedProfile);
-        setEditVisible(false);
-
-        // ✅ Update Redux store (all except photoUri)
-        dispatch(userdata({
-            ...user,
-            name: updatedProfile.name,
-            age: updatedProfile.age,
-            occupation: updatedProfile.occupation,
-            gender: updatedProfile.gender,
-            frequency: updatedProfile.frequency,
-            description: updatedProfile.description,
-            lastUpdated: updatedProfile.lastUpdated,
-        }));
-
-        try {
-            // ✅ Update Firestore user document
-            await firestore()
-                .collection("users")
-                .doc(user.uid)   // make sure user.uid exists in Redux
-                .update({
-                    name: updatedProfile.name,
-                    age: updatedProfile.age,
-                    occupation: updatedProfile.occupation,
-                    gender: updatedProfile.gender,
-                    frequency: updatedProfile.frequency,
-                    description: updatedProfile.description,
-                    lastUpdated: updatedProfile.lastUpdated,
-                });
-
-            // ✅ Save only photoUri to AsyncStorage (local only)
-            if (updatedProfile.photoUri) {
-                await AsyncStorage.setItem("photoUri", updatedProfile.photoUri);
-            } else {
-                await AsyncStorage.removeItem("photoUri");
-            }
-
-            Alert.alert("Profile Updated", "Your changes have been saved successfully.");
-        } catch (error) {
-            console.error("Failed to update profile:", error);
-            Alert.alert("Error", "Could not save your profile. Please try again.");
-        }
-    };
-
-    const pickImage = () => {
-        launchImageLibrary(
-            { mediaType: 'photo', quality: 0.7 },
-            (response) => {
-                if (response.didCancel) {
-                    // user cancelled
-                } else if (response.errorCode) {
-                    Alert.alert('Error', response.errorMessage || 'Error picking image');
-                } else if (response.assets && response.assets.length > 0) {
-                    const uri = response.assets[0].uri;
-                    if (uri) {
-                        setEditProfile(prev => ({ ...prev, photoUri: uri }));
-                    }
-                }
-            }
-        );
-    };
 
     return (
         <View style={styles.container}>
@@ -173,18 +167,14 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
 
             {/* Profile Section */}
             <View style={styles.profileSection}>
-                <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
-                    <View style={styles.profilePicWrapper}>
-                        {profile.photoUri ? (
-                            <Image source={{ uri: profile.photoUri }} style={styles.profilepic} />
-                        ) : (
-                            <Image source={require('../../assets/images/avatar.jpg')} style={styles.profilepic} />
-                        )}
-                        <View style={styles.cameraIconWrapper}>
-                            <FontAwesome name="camera" size={20} color="#fff" />
-                        </View>
-                    </View>
-                </TouchableOpacity>
+                <View style={styles.profilePicWrapper}>
+                    {profile.photoUri ? (
+                        <Image source={{ uri: profile.photoUri }} style={styles.profilepic} />
+                    ) : (
+                        <Image source={require('../../assets/images/avatar.jpg')} style={styles.profilepic} />
+                    )}
+
+                </View>
                 <Text style={styles.profileName}>{profile.name || 'Your Name'}</Text>
             </View>
 
