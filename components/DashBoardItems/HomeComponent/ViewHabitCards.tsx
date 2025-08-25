@@ -1,11 +1,11 @@
 import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome } from "@react-native-vector-icons/fontawesome";
-import React from 'react';
 import { useSelector } from 'react-redux';
-import type { RootState } from './../../redux/rootReducer';  // Adjust path
+import type { RootState } from './../../redux/rootReducer';
+import firestore from '@react-native-firebase/firestore';
 
 type CardDetail = {
     title: string;
@@ -21,6 +21,7 @@ type CardDetailWithColor = CardDetail & { backgroundColor: string };
 type Props = {
     customCards: CardDetail[];
     setCustomCards: React.Dispatch<React.SetStateAction<CardDetail[]>>;
+    saveCustomCards: (cards: CardDetail[]) => Promise<void>; // added
     navigation: any;
 };
 
@@ -37,25 +38,22 @@ const formatDuration = (value: string) => {
     ].join(":");
 };
 
-function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
+function ViewCardModal({ customCards, setCustomCards, saveCustomCards, navigation }: Props) {
     const [selectedCard, setSelectedCard] = useState<CardDetailWithColor | null>(null);
     const [selectedCardIndex, setSelectedCardIndex] = useState<number>(0);
 
-    // Get dark mode boolean from Redux
     const isDarkMode = useSelector((state: RootState) => state.theme);
+    const user = useSelector((state: RootState) => state.userData); // get user ID
 
     const loadCustomCards = async () => {
         const stored = await AsyncStorage.getItem("customCards");
-        if (stored) {
-            setCustomCards(JSON.parse(stored));
-        }
+        if (stored) setCustomCards(JSON.parse(stored));
     };
 
     const handleDeleteCard = async (indexToDelete: number) => {
         const updatedCards = [...customCards];
         updatedCards.splice(indexToDelete, 1);
-        setCustomCards(updatedCards);
-        await AsyncStorage.setItem("customCards", JSON.stringify(updatedCards));
+        await saveCustomCards(updatedCards); // save to AsyncStorage + Firestore
     };
 
     useFocusEffect(
@@ -110,7 +108,6 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
                                                 height: 28, width: 28,
                                                 justifyContent: "center", alignItems: "center",
                                                 borderRadius: 15,
-
                                             }}>
                                             <FontAwesome name="trash" size={20} color="#fff" />
                                         </Pressable>
@@ -180,6 +177,9 @@ function ViewCardModal({ customCards, setCustomCards, navigation }: Props) {
     );
 }
 
+export default ViewCardModal;
+
+// ----- Styles (same as before) -----
 const styles = StyleSheet.create({
     container: { flex: 1 },
     cardTitle: { fontSize: 20, fontWeight: "600", marginBottom: 6 },
@@ -208,34 +208,14 @@ const styles = StyleSheet.create({
     modalClose: {
         fontSize: 16, backgroundColor: '#fc5a5a', color: '#fff', fontWeight: 'bold',
         paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, textAlign: 'center',
-
     },
-    modalCloseText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
-        textAlign: 'center',
-    },
+    modalCloseText: { color: '#fff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' },
     startTimerButton: {
         fontSize: 16, backgroundColor: '#58d03d', color: '#fff', fontWeight: 'bold',
         paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, textAlign: 'center',
-
     },
-    startTimerButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
-        textAlign: 'center',
-    },
-    modalButton: {
-        borderRadius: 10,
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        minWidth: 100,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginHorizontal: 5,
-    }
+    startTimerButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' },
+    modalButton: { borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, minWidth: 100, justifyContent: 'center', alignItems: 'center', marginHorizontal: 5 }
 });
 
 const lightStyles = StyleSheet.create({
@@ -248,57 +228,50 @@ const lightStyles = StyleSheet.create({
 
 const darkStyles = StyleSheet.create({
     container: { backgroundColor: "#121212" },
-
-    cardTitle: { color: "#e0e0e0" }, // softer white
-    cardSubtitle: { color: "#bbbbbb" }, // lighter gray for subtitles
-
+    cardTitle: { color: "#e0e0e0" },
+    cardSubtitle: { color: "#bbbbbb" },
     Card: {
-        backgroundColor: "#292929",   // deeper dark gray base
+        backgroundColor: "#292929",
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: "#444",          // softer border
+        borderColor: "#444",
         elevation: 6,
-        shadowColor: "#000000AA",     // stronger shadow
+        shadowColor: "#000000AA",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.6,
         shadowRadius: 8,
         paddingVertical: 20,
         paddingHorizontal: 18,
     },
-
     modalTitle: { color: "#f0f0f0" },
     modalDescription: { color: "#ccc" },
-
     modalContent: {
-        backgroundColor: "#1a1a1a", // very dark background for modal
+        backgroundColor: "#1a1a1a",
         width: '90%', maxWidth: 350,
         borderRadius: 20,
         padding: 20,
         elevation: 20,
-        shadowColor: "#00ffccaa", // subtle teal glow
+        shadowColor: "#00ffccaa",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.7,
         shadowRadius: 16,
     },
-
     modalButtonClose: {
-        backgroundColor: "#e74c3c", // vibrant red
+        backgroundColor: "#e74c3c",
         borderWidth: 0,
         shadowColor: "#e74c3c",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.8,
         shadowRadius: 10,
     },
-
     modalButtonStart: {
-        backgroundColor: "#27ae60", // rich green
+        backgroundColor: "#27ae60",
         borderWidth: 0,
         shadowColor: "#27ae60",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.8,
         shadowRadius: 10,
     },
-
     modalButtonText: {
         color: "#fff",
         fontWeight: "700",
@@ -309,5 +282,3 @@ const darkStyles = StyleSheet.create({
         textShadowRadius: 3,
     },
 });
-
-export default ViewCardModal;

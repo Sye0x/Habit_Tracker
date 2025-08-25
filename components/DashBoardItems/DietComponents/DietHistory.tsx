@@ -7,14 +7,12 @@ import {
     Alert,
     TouchableOpacity,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-
 import { useDispatch, useSelector } from "react-redux";
+import firestore from "@react-native-firebase/firestore";
 import { toggletheme } from "../../redux/action"; // adjust path as needed
 import type { RootState } from "../../redux/rootReducer"; // adjust path as needed
-
-const STORAGE_KEY = "@calorie_counter_data_array";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type CalorieEntry = {
     date: string;
@@ -28,6 +26,7 @@ type CalorieEntry = {
 export default function DietHistory() {
     const dispatch = useDispatch();
     const darkMode = useSelector((state: RootState) => state.theme);
+    const user = useSelector((state: RootState) => state.userData);
 
     const [history, setHistory] = useState<CalorieEntry[]>([]);
 
@@ -45,16 +44,24 @@ export default function DietHistory() {
 
     const loadHistory = async () => {
         try {
-            const stored = await AsyncStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                const dataArray: CalorieEntry[] = JSON.parse(stored);
-                dataArray.sort((a, b) => (b.date > a.date ? 1 : -1));
-                setHistory(dataArray);
-            } else {
-                setHistory([]);
+            if (!user?.uid) return;
+            const doc = await firestore()
+                .collection("usersCalorieData")
+                .doc(user.uid)
+                .get();
+
+            let entries: CalorieEntry[] = [];
+            if (doc.exists()) {
+                const data = doc.data();
+                entries = data?.entries || [];
             }
+
+            // Sort descending by date
+            entries.sort((a, b) => (b.date > a.date ? 1 : -1));
+            setHistory(entries);
         } catch (e) {
-            Alert.alert("Error", "Failed to load history.");
+            console.error("Error loading history:", e);
+            Alert.alert("Error", "Failed to load history from server.");
         }
     };
 
@@ -65,8 +72,17 @@ export default function DietHistory() {
                 text: "Yes",
                 style: "destructive",
                 onPress: async () => {
-                    await AsyncStorage.removeItem(STORAGE_KEY);
-                    setHistory([]);
+                    if (!user?.uid) return;
+                    try {
+                        await firestore().collection("usersCalorieData").doc(user.uid).update({
+                            entries: [],
+                        });
+                        setHistory([]);
+                        Alert.alert("Success", "History cleared successfully.");
+                    } catch (e) {
+                        console.error("Error clearing history:", e);
+                        Alert.alert("Error", "Failed to clear history.");
+                    }
                 },
             },
         ]);
@@ -88,7 +104,7 @@ export default function DietHistory() {
     useFocusEffect(
         useCallback(() => {
             loadHistory();
-        }, [])
+        }, [user?.uid])
     );
 
     if (history.length === 0) {
@@ -113,7 +129,9 @@ export default function DietHistory() {
 
                 {history.map((entry) => (
                     <View key={entry.date} style={[styles.entryBox, darkMode && styles.entryBoxDark]}>
-                        <Text style={[styles.dateText, darkMode && styles.dateTextDark]}>{formatDate(entry.date)}</Text>
+                        <Text style={[styles.dateText, darkMode && styles.dateTextDark]}>
+                            {formatDate(entry.date)}
+                        </Text>
                         <View style={styles.row}>
                             <Text style={[styles.label, darkMode && styles.labelDark]}>Breakfast:</Text>
                             <Text style={[styles.value, darkMode && styles.valueDark]}>{entry.breakfast} kcal</Text>
@@ -131,22 +149,10 @@ export default function DietHistory() {
                             <Text style={[styles.value, darkMode && styles.valueDark]}>{entry.snacks} kcal</Text>
                         </View>
                         <View style={[styles.row, styles.totalRow]}>
-                            <Text
-                                style={[
-                                    styles.label,
-                                    styles.totalLabel,
-                                    darkMode && styles.totalLabelDark,
-                                ]}
-                            >
+                            <Text style={[styles.label, styles.totalLabel, darkMode && styles.totalLabelDark]}>
                                 Total:
                             </Text>
-                            <Text
-                                style={[
-                                    styles.value,
-                                    styles.totalValue,
-                                    darkMode && styles.totalValueDark,
-                                ]}
-                            >
+                            <Text style={[styles.value, styles.totalValue, darkMode && styles.totalValueDark]}>
                                 {entry.totalCalories} kcal
                             </Text>
                         </View>
@@ -163,6 +169,9 @@ export default function DietHistory() {
         </View>
     );
 }
+
+// ... your styles remain the same
+
 
 const styles = StyleSheet.create({
     container: {

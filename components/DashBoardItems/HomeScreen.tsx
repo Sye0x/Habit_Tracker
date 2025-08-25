@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from './../redux/rootReducer';  // Adjust path
 import { useDispatch } from 'react-redux';
 import { toggletheme } from '../redux/action'; // adjust path if needed
-
+import firestore from '@react-native-firebase/firestore';
 
 type CardDetail = {
     title: string;
@@ -80,13 +80,36 @@ function HomeScreen({ navigation }: any) {
     const habitTypes = ["Cardio", "Strength", "Meditation", "Study"];
     const habitFrequency = ["Daily", "Weekly", "Monthly"];
 
-    const loadCustomCards = async () => {
-        const stored = await AsyncStorage.getItem("customCards");
-        if (stored) setCustomCards(JSON.parse(stored));
+    const saveCustomCards = async (cards: CardDetail[]) => {
+        setCustomCards(cards);
+        await AsyncStorage.setItem("customCards", JSON.stringify(cards));
+
+        if (user?.uid) {
+            await firestore()
+                .collection('userHobby')
+                .doc(user.uid)
+                .set({ cards }, { merge: true });
+        }
     };
 
-    const saveCustomCards = async (cards: CardDetail[]) => {
-        await AsyncStorage.setItem("customCards", JSON.stringify(cards));
+    const loadCustomCards = async () => {
+        let cards: CardDetail[] = [];
+
+        // Load from AsyncStorage first
+        const stored = await AsyncStorage.getItem("customCards");
+        if (stored) cards = JSON.parse(stored);
+
+        // Load from Firestore to ensure latest data
+        if (user?.uid) {
+            const doc = await firestore().collection('userHobby').doc(user.uid).get();
+
+            const firestoreCards = doc.data()?.cards || [];
+            cards = firestoreCards; // override with Firestore version
+            await AsyncStorage.setItem("customCards", JSON.stringify(cards)); // sync back to AsyncStorage
+
+        }
+
+        setCustomCards(cards);
     };
 
     const resetHabitsIfNeeded = async () => {
@@ -163,8 +186,7 @@ function HomeScreen({ navigation }: any) {
         };
 
         const updatedCards = [...customCards, newCard];
-        setCustomCards(updatedCards);
-        await saveCustomCards(updatedCards);
+        await saveCustomCards(updatedCards); // now saves both locally & Firestore
 
         setNewCardTitle("");
         setNewCardDescription("");
@@ -184,7 +206,12 @@ function HomeScreen({ navigation }: any) {
             <Pressable style={[styles.addButton, { backgroundColor: theme.addButton }]} onPress={() => setShowAddCardModal(true)}>
                 <Text style={[styles.addButtonText, { color: theme.addButtonText }]}>+</Text>
             </Pressable>
-            <ViewCardModal customCards={customCards} setCustomCards={setCustomCards} navigation={navigation} />
+            <ViewCardModal
+                customCards={customCards}
+                setCustomCards={setCustomCards}
+                saveCustomCards={saveCustomCards} // <-- pass it here
+                navigation={navigation}
+            />
 
             {showAddCardModal && (
                 <View style={styles.modalWrapper}>

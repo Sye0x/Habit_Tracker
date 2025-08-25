@@ -15,6 +15,10 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { toggletheme } from "../../redux/action"; // Adjust path
 import type { RootState } from "../../redux/rootReducer"; // Adjust path
+import { userdata } from "../../redux/userDataAction";
+import firestore from "@react-native-firebase/firestore";
+
+
 
 const STORAGE_KEY = "@calorie_counter_data_array";
 
@@ -24,6 +28,8 @@ type ErrorsType = Record<MealName | "targetCalories", string>;
 export default function CalorieCounterScreen() {
     const dispatch = useDispatch();
     const darkMode = useSelector((state: RootState) => state.theme);
+    const user = useSelector((state: RootState) => state.userData);
+
 
     useEffect(() => {
         (async () => {
@@ -103,9 +109,9 @@ export default function CalorieCounterScreen() {
         };
 
         try {
+            // Save to AsyncStorage locally
             const stored = await AsyncStorage.getItem(STORAGE_KEY);
             let dataArray = stored ? JSON.parse(stored) : [];
-
             const existingIndex = dataArray.findIndex((item: any) => item.date === today);
 
             if (existingIndex !== -1) {
@@ -113,13 +119,40 @@ export default function CalorieCounterScreen() {
             } else {
                 dataArray.push(entry);
             }
-
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataArray));
+
+            // Save to Firestore under user's uid
+            if (user?.uid) {
+                const userDoc = firestore().collection("usersCalorieData").doc(user.uid);
+
+                await firestore().runTransaction(async (transaction) => {
+                    const doc = await transaction.get(userDoc);
+                    if (!doc.exists()) {
+                        transaction.set(userDoc, { entries: [entry] });
+                    } else {
+                        const data = doc.data();
+                        let entries = data?.entries || [];
+
+                        // Replace if same date exists, else push new
+                        const index = entries.findIndex((item: any) => item.date === today);
+                        if (index !== -1) {
+                            entries[index] = entry;
+                        } else {
+                            entries.push(entry);
+                        }
+
+                        transaction.update(userDoc, { entries });
+                    }
+                });
+            }
+
             Alert.alert("Success", "Your calorie data has been saved.");
         } catch (e) {
+            console.error("Error saving data:", e);
             Alert.alert("Error", "Failed to save data.");
         }
     };
+
 
     useFocusEffect(
         React.useCallback(() => {

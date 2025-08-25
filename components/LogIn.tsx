@@ -47,6 +47,7 @@ export default function Login({ navigation }: any) {
 
     const dispatch = useDispatch();
     const darkMode = useSelector((state: RootState) => state.theme);
+
     const theme = darkMode ? darkTheme : lightTheme;
 
     const toggleTheme = async () => {
