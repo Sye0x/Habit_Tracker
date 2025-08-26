@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     dropdownOption: { paddingVertical: 8, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
     modalAdd: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, alignItems: 'center', marginTop: 16, width: '100%' },
     modalAddText: { fontSize: 16, fontWeight: 'bold' },
-    addButton: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", alignSelf: "flex-end", marginBottom: 10, elevation: 5 },
+    addButton: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", alignSelf: "flex-end", marginBottom: 1, elevation: 5, marginRight: 10 },
     addButtonText: { fontSize: 28, fontWeight: "bold" },
 });
 

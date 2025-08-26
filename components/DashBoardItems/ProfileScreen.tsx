@@ -188,31 +188,18 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                         { label: 'Gender', value: profile.gender },
                         { label: 'Occupation', value: profile.occupation },
                         { label: 'Habit Frequency', value: profile.frequency },
+                        { label: 'Description', value: profile.description },
                     ].map((item, idx) => (
                         <View key={item.label}>
                             <View style={styles.infoRow}>
                                 <Text style={styles.label}>{item.label}</Text>
                                 <Text style={styles.value}>{item.value || '-'}</Text>
                             </View>
-                            {idx !== 3 && <View style={styles.divider} />}
+                            {idx !== 4 && <View style={styles.divider} />}
                         </View>
                     ))}
 
-                    <View style={[styles.infoRow, { alignItems: 'flex-start', marginTop: 12 }]}>
-                        <Text style={styles.label}>Description</Text>
-                        <Text
-                            style={[
-                                styles.value,
-                                {
-                                    flex: 1,
-                                    fontStyle: profile.description ? 'normal' : 'italic',
-                                    color: profile.description ? styles.value.color : '#888',
-                                },
-                            ]}
-                        >
-                            {profile.description || 'No description added yet.'}
-                        </Text>
-                    </View>
+
                 </View>
 
 
@@ -459,6 +446,7 @@ const getStyles = (darkMode: boolean) => StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 10,
+        flexWrap: "wrap"
     },
     label: {
         fontSize: 16,
@@ -468,7 +456,7 @@ const getStyles = (darkMode: boolean) => StyleSheet.create({
     value: {
         fontSize: 16,
         color: darkMode ? '#eee' : '#2c3e50',
-        maxWidth: '70%',
+
         textAlign: 'right',
     },
     divider: {

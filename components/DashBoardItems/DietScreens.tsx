@@ -56,9 +56,10 @@ export default function DietScreen() {
                     },
                 }}
             >
-                <Tab.Screen name="Diet History" component={DietHistory} />
                 <Tab.Screen name="Diet Plans" component={DietScreenPlans} />
                 <Tab.Screen name="Calorie Calculator" component={CalorieCounter} />
+                <Tab.Screen name="Diet History" component={DietHistory} />
+
             </Tab.Navigator>
         </View>
     );

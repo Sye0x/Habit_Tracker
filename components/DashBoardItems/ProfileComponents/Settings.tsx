@@ -65,7 +65,7 @@ export default function SettingsScreen() {
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <FontAwesome
                         name="arrow-left"
-                        size={24}
+                        size={22}
                         color={darkMode ? "#fff" : "#000"}
                     />
                 </TouchableOpacity>
@@ -163,9 +163,6 @@ export default function SettingsScreen() {
     );
 }
 
-// ... keep your styles the same
-
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -179,12 +176,11 @@ const styles = StyleSheet.create({
     headerRow: {
         flexDirection: "row",
         alignItems: "center",
-        paddingLeft: 10,
         gap: 20,
         marginBottom: 20,
     },
     header: {
-        fontSize: 32,
+        fontSize: 28,
         fontWeight: "bold",
         color: "#333",
     },

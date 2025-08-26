@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     TimerText: {
-        fontSize: 64,
+        fontSize: 40,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 30,
