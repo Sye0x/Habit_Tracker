@@ -233,7 +233,7 @@ const darkStyles = StyleSheet.create({
     Card: {
         backgroundColor: "#292929",
         borderRadius: 20,
-        borderWidth: 1,
+        borderWidth: 2.2,
         borderColor: "#444",
         elevation: 6,
         shadowColor: "#000000AA",
